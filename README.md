@@ -12,6 +12,19 @@ These are a bunch of random tools I've found useful with Obsidian + Github sync
   [obsidian-git](https://github.com/Vinzent03/obsidian-git) installed.
 - Hosting: [Vercel](https://vercel.com) is the easiest way to host this thing.
 
+## Setting Up Inbound Email > Obsidian
+
+If you're using Postmark:
+
+1. Sign up for an account
+2. Create a server
+3. Click Default Inbound Stream
+4. Under "Set your server's inbound webhook URL" add your url. It should be
+   whatever URL you're using in dev or production + `/api/email`
+5. Save changes
+6. Either grab the server's inbound address from that page, or head to settings
+   to set up a custom domain address like `obsidian@obsidian.yourdomain.com`
+
 ## Running Obsidian Tools Locally
 
 ### Starting the local server
@@ -118,6 +131,8 @@ You can check out
 feedback and contributions are welcome!
 
 ## Deploy on Vercel
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fheyitsnoah%2Fobsidian-tools)
 
 ## Cool
 
