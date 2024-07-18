@@ -16,7 +16,7 @@ These are a bunch of random tools I've found useful with Obsidian + Github sync
 
 If you're using Postmark:
 
-1. Sign up for an account
+1. [Sign up for an account](https://account.postmarkapp.com/sign_up)
 2. Create a server
 3. Click Default Inbound Stream
 4. Under "Set your server's inbound webhook URL" add your url. It should be
