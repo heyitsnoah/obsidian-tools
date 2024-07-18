@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+
+PORT=$1
+APPNAME=${APPNAME:-default-app}
+
+cloudflared tunnel --config .cloudflared/config.yml --url localhost:$PORT run $APPNAME

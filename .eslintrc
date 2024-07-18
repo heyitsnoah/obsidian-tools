@@ -1,0 +1,70 @@
+{
+  "env": { "node": true },
+  "extends": [
+    // order matters as some override default configs
+    "eslint:recommended",
+    "plugin:@typescript-eslint/recommended",
+    "prettier",
+    "plugin:@next/next/recommended"
+  ],
+  "parser": "@typescript-eslint/parser",
+  "parserOptions": { "project": "tsconfig.json" },
+  "plugins": [
+    "react",
+    "simple-import-sort",
+    "unused-imports",
+    "no-floating-promise"
+  ],
+  "rules": {
+    // https://eslint.org/docs/rules/
+    "curly": ["off", "multi-line", "consistent"],
+    "react/no-unescaped-entities": "error",
+    "dot-notation": "warn",
+    "eol-last": "warn",
+    "eqeqeq": "warn",
+    "no-await-in-loop": "off",
+    "no-dupe-class-members": "off", // handled by @typescript-eslint
+    "no-else-return": "warn",
+    "no-empty-pattern": "off",
+    "no-extra-bind": "warn",
+    "no-fallthrough": ["error", { "commentPattern": "no-fallthrough-ignore" }],
+    "no-implicit-coercion": ["warn", { "allow": ["!!"] }],
+    "no-template-curly-in-string": "error",
+    "no-useless-computed-key": "warn",
+    "no-useless-rename": "warn",
+    "no-useless-return": "warn",
+    "no-var": "warn",
+    "nonblock-statement-body-position": "off",
+    "object-shorthand": "warn",
+    "operator-assignment": "warn",
+    "prefer-const": "warn",
+    "prefer-template": "warn",
+    "quotes": [
+      "off",
+      "single",
+      { "avoidEscape": true, "allowTemplateLiterals": false }
+    ],
+    "radix": "error",
+    "yoda": "warn",
+    "no-unused-vars": "off",
+
+    // https://github.com/lydell/eslint-plugin-simple-import-sort#example-configuration
+    "simple-import-sort/exports": "warn",
+    "simple-import-sort/imports": "warn",
+
+    // https://github.com/SebastienGllmt/eslint-plugin-no-floating-promise#usage
+    "no-floating-promise/no-floating-promise": 2,
+
+    // https://github.com/sweepline/eslint-plugin-unused-imports#usage
+    "unused-imports/no-unused-imports": "error",
+    "unused-imports/no-unused-vars": [
+      "error",
+      {
+        "vars": "all",
+        "varsIgnorePattern": "^_",
+        "args": "after-used",
+        "argsIgnorePattern": "^_"
+      }
+    ]
+  }
+}
