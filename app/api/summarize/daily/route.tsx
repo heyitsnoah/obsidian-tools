@@ -2,10 +2,7 @@ import { getDailySummarySystemPrompt } from '@/prompts/summarize/daily-summary-s
 import { RecentFile } from '@/types/files'
 import { anthropic } from '@/utils/ai'
 import { createOrUpdateFile, octokit } from '@/utils/github'
-import {
-  ContentBlock,
-  TextBlock,
-} from '@anthropic-ai/sdk/resources/messages.mjs'
+import { TextBlock } from '@anthropic-ai/sdk/resources/messages.mjs'
 import dayjs from 'dayjs'
 import { NextRequest, NextResponse } from 'next/server'
 
@@ -72,6 +69,11 @@ async function getRecentFiles(
 }
 
 export async function GET(req: NextRequest) {
+  if (
+    req.headers.get('Authorization') !== `Bearer ${process.env.CRON_SECRET}`
+  ) {
+    return new Response('Unauthorized', { status: 401 })
+  }
   const owner = process.env.GITHUB_USERNAME!
   const repo = process.env.GITHUB_REPO!
 
