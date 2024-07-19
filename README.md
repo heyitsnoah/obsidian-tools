@@ -17,12 +17,18 @@ These are a bunch of random tools I've found useful with Obsidian + Github sync
 If you're using Postmark:
 
 1. [Sign up for an account](https://account.postmarkapp.com/sign_up)
-2. Create a server
-3. Click Default Inbound Stream
-4. Under "Set your server's inbound webhook URL" add your url. It should be
-   whatever URL you're using in dev or production + `/api/email`
-5. Save changes
-6. Either grab the server's inbound address from that page, or head to settings
+2. Create a secret key to use with Postmark, put this in your `.env` file under
+   `SECRET_KEY`. If you want something simple, just
+   [generate a UUID](https://www.uuidgenerator.net/). It's not world class
+   security, but it will get the job done.
+3. Create a server
+4. Click Default Inbound Stream
+5. Under "Set your server's inbound webhook URL" add your url. It should be
+   whatever URL you're using in dev or production +
+   `/api/email?token=SECRET_KEY` (make sure to add your `SECRET_KEY` from step
+   2).
+6. Save changes
+7. Either grab the server's inbound address from that page, or head to settings
    to set up a custom domain address like `obsidian@obsidian.yourdomain.com`
 
 ## Running Obsidian Tools Locally
