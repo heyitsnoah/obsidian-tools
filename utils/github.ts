@@ -22,7 +22,7 @@ export function sanitizeFilename(filename: string): string {
 export async function createOrUpdateFile({
   filename,
   content,
-  path,
+  path = '',
   inbox = true,
 }: {
   filename: string
@@ -32,15 +32,24 @@ export async function createOrUpdateFile({
 }) {
   const owner = process.env.GITHUB_USERNAME!
   const repo = process.env.GITHUB_REPO!
-  const filePath = `${inbox && process.env.OBSIDIAN_INBOX_PATH}${
-    path && path.startsWith('/') ? path : `/${path}`
-  }/${filename}`
+
+  let filePath = ''
+  if (inbox && process.env.OBSIDIAN_INBOX_PATH) {
+    filePath += process.env.OBSIDIAN_INBOX_PATH
+  }
+
+  if (path) {
+    filePath += path.startsWith('/') ? path : `/${path}`
+  }
+
+  filePath += `/${filename}`
+
   const url = `https://api.github.com/repos/${owner}/${repo}/contents/${encodeURIComponent(
     filePath
   )}`
   const base64Content = btoa(content)
 
-  console.log(`Attempting to create/update file: ${path}`)
+  console.log(`Attempting to create/update file: ${filePath}`)
 
   try {
     // Check if the file already exists
