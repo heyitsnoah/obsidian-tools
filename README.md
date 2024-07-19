@@ -12,6 +12,13 @@ These are a bunch of random tools I've found useful with Obsidian + Github sync
   [obsidian-git](https://github.com/Vinzent03/obsidian-git) installed.
 - Hosting: [Vercel](https://vercel.com) is the easiest way to host this thing.
 
+## Setting up your env file
+
+Copy the `env.example` file to `.env` and fill in whatever you need.
+
+1. `SECRET_KEY` is currently used by Postmark for emails.
+2. `CRON_SECRET` is used by Vercel for daily summaries.
+
 ## Setting Up Inbound Email > Obsidian
 
 If you're using Postmark:
