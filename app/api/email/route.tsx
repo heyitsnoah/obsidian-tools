@@ -3,10 +3,20 @@ import TurndownService from 'turndown'
 
 import { EmailMessageRawBody } from '@/types/email'
 import { createOrUpdateFile, sanitizeFilename } from '@/utils/github'
-
 export async function POST(req: NextRequest) {
-  const body: EmailMessageRawBody = await req.json()
+  const searchParams = new URLSearchParams(req.url.split('?')[1])
+
+  if (
+    !searchParams.has('token') ||
+    searchParams.get('token') !== process.env.SECRET_KEY
+  ) {
+    console.error('Unauthorized')
+    return new Response('Unauthorized', { status: 401 })
+  }
+
   try {
+    const body: EmailMessageRawBody = await req.json()
+
     console.log('Received body:', JSON.stringify(body, null, 2))
 
     const turndownService = new TurndownService()
