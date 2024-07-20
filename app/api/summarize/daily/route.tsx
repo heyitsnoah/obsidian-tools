@@ -4,7 +4,8 @@ import { anthropic } from '@/utils/ai'
 import { createOrUpdateFile, octokit } from '@/utils/github'
 import { TextBlock } from '@anthropic-ai/sdk/resources/messages.mjs'
 import dayjs from 'dayjs'
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
+export const maxDuration = 180 // This function can run for a maximum of 5 seconds
 
 async function getRecentFiles(
   owner: string,
