@@ -7,7 +7,6 @@
   "[prisma]": {
     "editor.defaultFormatter": "Prisma.prisma"
   },
-  "cSpell.words": ["airtable"],
   "[xml]": {
     "editor.defaultFormatter": "redhat.vscode-xml"
   }
