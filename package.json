@@ -11,7 +11,11 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.24.3",
     "@upstash/qstash": "^2.6.1",
+    "@upstash/redis": "^1.33.0",
+    "axios": "^1.7.2",
+    "cheerio": "^1.0.0-rc.12",
     "dayjs": "^1.11.12",
+    "get-urls": "^12.1.0",
     "jsonwebtoken": "^9.0.2",
     "next": "14.2.5",
     "octokit": "^4.0.2",
@@ -19,8 +23,11 @@
     "pako": "^2.1.0",
     "react": "^18",
     "react-dom": "^18",
+    "socks-proxy-agent": "^8.0.4",
     "string-byte-length": "^3.0.0",
-    "turndown": "^7.2.0"
+    "turndown": "^7.2.0",
+    "typescript-eslint": "^7.16.1",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@types/jsonwebtoken": "^9.0.6",
