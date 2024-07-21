@@ -11,6 +11,14 @@ These are a bunch of random tools I've found useful with Obsidian + Github sync
   on for your Obsidian. This is reasonably straightforward with
   [obsidian-git](https://github.com/Vinzent03/obsidian-git) installed.
 - Hosting: [Vercel](https://vercel.com) is the easiest way to host this thing.
+- Redis/Queue: [Upstash](https://upstash.com) will be needed for their Qstash
+  queue service and for their Redis serverless. Create a new Redis DB and a
+  Qstash queue and put the variables in the env file.
+
+## Optional Services
+
+- Proxy: I like [IPRoyal](https://iproyal.com) for proxy. This helps with
+  scraping a lot, but it's optional.
 
 ## Setting up your env file
 
