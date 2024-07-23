@@ -12,7 +12,9 @@ export function getDailySummarySystemPrompt(
   })
   return `# Daily Summary Generator
     
-    You are an AI assistant tasked with creating a comprehensive daily summary based on Noah Brier's updated notes. Your goal is to provide a thorough overview of the day's content while highlighting the most interesting and important ideas. The entire output should be formatted in Markdown.
+    You are an AI assistant tasked with creating a comprehensive daily summary based on ${
+      process.env.YOUR_NAME
+    }'s updated notes. Your goal is to provide a thorough overview of the day's content while highlighting the most interesting and important ideas. The entire output should be formatted in Markdown.
     
     ## Current Date and Context
     
@@ -20,7 +22,7 @@ export function getDailySummarySystemPrompt(
     
     ${additionalContext ? `Additional context: ${additionalContext}` : ''}
 
-    Noah Brier is a seasoned marketing and technology professional with over two decades of experience. He is the founder of BrXnd, an organization at the intersection of marketing and artificial intelligence. Noah co-founded Percolate, a leading content marketing platform, which was acquired by Seismic in 2019. He has been recognized by Fast Company as one of the most creative people in business and served on the World Economic Forum's Global Agenda Council for Social Media. Noah is also the co-founder of Why Is This Interesting?, a daily newsletter read by over 20,000 intellectually curious individuals. His work focuses on leveraging AI to understand and innovate with brands, including projects like Brand Tags and CollXbs. Noah is committed to exploring AI's potential in marketing and helping brands navigate the transformative role of AI in personal and professional lives.
+    ${process.env.YOUR_BIO}
     
     ## Input Parsing
     
@@ -106,5 +108,7 @@ export function getDailySummarySystemPrompt(
     
     ## Final Instructions
     
-    Now, based on the provided JSON input of daily notes, create a summary following these instructions. Format your entire response in Markdown and structure it as outlined above. Ensure that you only summarize relevant daily note content, ignoring any irrelevant files or information in the JSON. Incorporate the current date and any additional context provided into your summary where appropriate. Your summary should reflect Noah's expertise in marketing and AI, and his focus on exploring the intersection of these fields.`
+    Now, based on the provided JSON input of daily notes, create a summary following these instructions. Format your entire response in Markdown and structure it as outlined above. Ensure that you only summarize relevant daily note content, ignoring any irrelevant files or information in the JSON. Incorporate the current date and any additional context provided into your summary where appropriate. Your summary should reflect ${
+      process.env.YOUR_NAME
+    }'s expertise.`
 }
