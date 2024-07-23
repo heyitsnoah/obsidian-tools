@@ -26,6 +26,7 @@ Copy the `env.example` file to `.env` and fill in whatever you need.
 
 1. `SECRET_KEY` is currently used by Postmark for emails.
 2. `CRON_SECRET` is used by Vercel for daily summaries.
+3. `YOUR_NAME` and `YOUR_BIO` are used in the prompt.
 
 ## Setting Up Inbound Email > Obsidian
 
