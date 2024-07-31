@@ -1,9 +1,10 @@
 import { TextBlock } from '@anthropic-ai/sdk/resources/messages.mjs'
 import dayjs from 'dayjs'
 import getUrls from 'get-urls'
+import { NextRequest } from 'next/server'
 
 import { getDailySummarySystemPrompt } from '@/prompts/summarize/daily-summary-user'
-import { RecentFile } from '@/types/files'
+import { RecentDiff, RecentFile } from '@/types/files'
 import { UrlBodies } from '@/types/urls'
 import { anthropic, openai } from '@/utils/ai'
 import { createOrUpdateFile, octokit } from '@/utils/github'
@@ -11,7 +12,7 @@ import { redis } from '@/utils/redis'
 import { publishToUpstash } from '@/utils/upstash'
 import { getUrlKeys, storeUrls } from '@/utils/urls'
 export const maxDuration = 300
-
+export const dynamic = 'force-dynamic'
 const EXCLUDED_TERMS: string[] = []
 if (process.env.DAILY_SUMMARY_NAME) {
   EXCLUDED_TERMS.push(process.env.DAILY_SUMMARY_NAME)
@@ -22,10 +23,11 @@ if (process.env.WEEKLY_SUMMARY_NAME) {
 if (process.env.MONTHLY_SUMMARY_NAME) {
   EXCLUDED_TERMS.push(process.env.MONTHLY_SUMMARY_NAME)
 }
+
 async function getRecentFiles(
   owner: string,
   repo: string
-): Promise<RecentFile[]> {
+): Promise<{ files: RecentFile[]; diffs: RecentDiff[] }> {
   const twentyFourHoursAgo = new Date(
     Date.now() - 24 * 60 * 60 * 1000
   ).toISOString()
@@ -57,30 +59,60 @@ async function getRecentFiles(
     }
 
     const files: RecentFile[] = []
+    const diffs: RecentDiff[] = []
 
     for (const filename of recentFiles) {
       try {
         console.log(`Fetching content for file: ${filename}`)
-        const { data } = await octokit.rest.repos.getContent({
+        const listCommits = await octokit.rest.repos.listCommits({
           owner,
           repo,
           path: filename,
         })
-        if (data && typeof data === 'object' && 'type' in data) {
-          if (
-            data.type === 'file' &&
-            'content' in data &&
-            typeof data.content === 'string'
-          ) {
-            const body = Buffer.from(data.content, 'base64').toString('utf-8')
-            files.push({ filename, body })
-          } else if (data.type === 'symlink' || data.type === 'submodule') {
-            console.log(`${filename} is a ${data.type}, skipping...`)
-          } else {
-            console.log(`Unexpected data type for ${filename}: ${data.type}`)
+        const oldestCommit = listCommits.data.reduce((oldest, commit) => {
+          const commitDate = new Date(commit.commit.committer?.date || '')
+          return commitDate < oldest ? commitDate : oldest
+        }, new Date())
+
+        if (dayjs().diff(oldestCommit, 'hours') >= 24) {
+          console.log(
+            `File ${filename} is older than 24 hours, fetching diff...`
+          )
+          const latestCommit = listCommits.data[0].sha
+          const { data: diffData } = await octokit.rest.repos.compareCommits({
+            owner,
+            repo,
+            base: `${latestCommit}~1`,
+            head: latestCommit,
+          })
+          const fileDiff = diffData.files?.find(
+            (file) => file.filename === filename
+          )
+          if (fileDiff && fileDiff.patch) {
+            diffs.push({ filename, diff: fileDiff.patch })
           }
         } else {
-          console.log(`Unexpected data format for ${filename}`)
+          const { data } = await octokit.rest.repos.getContent({
+            owner,
+            repo,
+            path: filename,
+          })
+          if (data && typeof data === 'object' && 'type' in data) {
+            if (
+              data.type === 'file' &&
+              'content' in data &&
+              typeof data.content === 'string'
+            ) {
+              const body = Buffer.from(data.content, 'base64').toString('utf-8')
+              files.push({ filename, body })
+            } else if (data.type === 'symlink' || data.type === 'submodule') {
+              console.log(`${filename} is a ${data.type}, skipping...`)
+            } else {
+              console.log(`Unexpected data type for ${filename}: ${data.type}`)
+            }
+          } else {
+            console.log(`Unexpected data format for ${filename}`)
+          }
         }
       } catch (error) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -92,30 +124,41 @@ async function getRecentFiles(
       }
     }
 
-    return files
+    return { files, diffs }
   } catch (error) {
     console.error('Error in getRecentFiles:', error)
     throw error
   }
 }
 
-export async function GET() {
-  //   if (
-  //     req.headers.get('Authorization') !== `Bearer ${process.env.CRON_SECRET}`
-  //   ) {
-  //     return new Response('Unauthorized', { status: 401 })
-  //   }
+export async function GET(req: NextRequest) {
+  if (
+    req.headers.get('Authorization') !== `Bearer ${process.env.CRON_SECRET}` &&
+    process.env.NODE_ENV !== 'development'
+  ) {
+    return new Response('Unauthorized', { status: 401 })
+  }
   const owner = process.env.GITHUB_USERNAME!
   const repo = process.env.GITHUB_REPO!
 
   const recentFiles = await getRecentFiles(owner, repo)
-  // console.log(recentFiles)
+  // return new Response('ok', { status: 200 })
   const urlKeys = getUrlKeys()
+  console.log(urlKeys)
+  console.log(process.env.UPSTASH_REDIS_REST_URL)
   const exists = await redis.exists(urlKeys.urlBodiesKey)
+  console.log(exists)
+  // return new Response('ok', { status: 200 })
   if (!exists) {
+    console.log('running URLs')
     const urls: string[] = []
-    recentFiles.map((file) => {
+    recentFiles.files.map((file) => {
       getUrls(file.body).forEach((url) => {
+        urls.push(url)
+      })
+    })
+    recentFiles.diffs.map((diff) => {
+      getUrls(diff.diff).forEach((url) => {
         urls.push(url)
       })
     })
@@ -125,7 +168,7 @@ export async function GET() {
         {
           role: 'system',
           content:
-            'You will be given an array of URLs. Your job is to return the urls that represent valuable content, not the ones that are generic, redirects, generic, shortened, and otherwise not useful. Return urls in this JSON format: {usefulUrls: string[]}',
+            'You will be given an array of URLs. Your job is to return the urls that represent valuable content, not the ones that are generic (like google.com, yahoo.com, nytimes.com, cnn.com, etc.), redirects, generic, shortened, and otherwise not useful. Return urls in this JSON format: {usefulUrls: string[]}',
         },
         {
           role: 'user',
@@ -146,6 +189,7 @@ export async function GET() {
     })
     return new Response('processing urls', { status: 200 })
   }
+  console.log('already has urls')
   const response = await anthropic.messages.create({
     messages: [
       { role: 'user', content: getDailySummarySystemPrompt(recentFiles) },
