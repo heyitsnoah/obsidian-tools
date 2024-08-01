@@ -9,20 +9,6 @@ const urlResponse = z.object({
   skipUrl: z.boolean(),
 })
 
-export async function storeUrls(urlQueueKey: string, urls: string[]) {
-  await redis.rpush(urlQueueKey, ...urls)
-  await redis.expire(urlQueueKey, 86400) // Set TTL for 24 hours
-}
-
-export async function isProcessingComplete(
-  urlQueueKey: string,
-  urlProcessedKey: string,
-) {
-  const totalUrls = await redis.llen(urlQueueKey)
-  const processedUrls = await redis.hlen(urlProcessedKey)
-  return totalUrls === 0 && processedUrls === totalUrls
-}
-
 export async function processUrl(url: string, urlBodiesKey: string) {
   try {
     const body = await scrapeUrl(url) // Replace with your scraping function
