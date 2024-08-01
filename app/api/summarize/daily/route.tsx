@@ -28,7 +28,7 @@ if (process.env.WEEKLY_SUMMARY_NAME) {
 if (process.env.MONTHLY_SUMMARY_NAME) {
   EXCLUDED_TERMS.push(process.env.MONTHLY_SUMMARY_NAME)
 }
-const queue = 'daily-note-queue-test'
+const queue = 'daily-note-queue'
 
 const UsefulUrls = z.object({
   usefulUrls: z.array(z.string()),
@@ -146,14 +146,7 @@ export async function POST(req: NextRequest) {
     await verifyUpstashSignature(req)
   console.log('/api/summarize/daily')
   console.log(body)
-  // *******************************************
-  // todo:
-  // 1. get all the files from the last 24 hours
-  // 2. update the prompt to take all teh file summaries
-  // 3. deal with the diffs
-  // 3. get rid of the action items
-  // 4. clean up the extra code
-  // *******************************************
+
   const keys = getQueueKeys(queue)
   const urlBodies: UrlBodies | null = await redis.hgetall(keys.urlsKey)
   const notes: Record<string, string> | null = await redis.hgetall(
