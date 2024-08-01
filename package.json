@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@anatine/zod-openapi": "^2.2.6",
     "@anthropic-ai/sdk": "^0.24.3",
     "@upstash/qstash": "^2.6.1",
     "@upstash/redis": "^1.33.0",
@@ -46,6 +47,7 @@
     "eslint-plugin-sort-keys-fix": "^1.1.2",
     "eslint-plugin-unused-imports": "^3.2.0",
     "postcss": "^8",
+    "prettier": "^3.3.3",
     "tailwindcss": "^3.4.1",
     "typescript": "^5"
   }
