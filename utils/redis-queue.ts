@@ -19,7 +19,7 @@ export type QueueKeys = {
 export function getQueueKeys(queueName: string): QueueKeys {
   const date = new Date().toISOString().split('T')[0]
   const queueKey = `${queueName}_queue_${date}`
-  const notesKey = `${queueName}_results_${date}`
+  const notesKey = `${queueName}_notes_${date}`
   const urlsKey = `${queueName}_urls_${date}`
   const processedKey = `${queueName}_processed_${date}`
   return { queueKey, notesKey, urlsKey, processedKey }
@@ -32,7 +32,7 @@ export async function storeItems<T>(queueKey: string, items: QueueItem<T>[]) {
 
 export async function isProcessingComplete(
   queueKey: string,
-  processedKey: string
+  processedKey: string,
 ): Promise<boolean> {
   const totalItems = await redis.llen(queueKey)
   const processedItems = await redis.hlen(processedKey)
@@ -43,7 +43,7 @@ export async function processItem<T, R>(
   queueKey: string,
   resultsKey: string,
   processedKey: string,
-  processorFunction: (item: QueueItem<T>) => Promise<ProcessedResult<R>>
+  processorFunction: (item: QueueItem<T>) => Promise<ProcessedResult<R>>,
 ): Promise<number> {
   const itemString: string | null = await redis.lpop(queueKey)
   if (itemString) {
