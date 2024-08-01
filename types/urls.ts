@@ -3,7 +3,7 @@ type Metadata = {
   value: string
 }
 
-type UrlSummary = {
+export type UrlSummary = {
   title: string
   body: string
   metadata: Metadata[]

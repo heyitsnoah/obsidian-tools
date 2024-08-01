@@ -1,4 +1,4 @@
-import { Receiver } from '@upstash/qstash'
+import { Client, Receiver } from '@upstash/qstash'
 import { NextRequest } from 'next/server'
 import pako from 'pako'
 import getByteLength from 'string-byte-length'
@@ -8,6 +8,7 @@ import { RouteMessageMap, UpstashRoute } from '@/types/upstash'
 const gzip = async (input: string): Promise<Buffer> => {
   return Buffer.from(pako.gzip(input))
 }
+const client = new Client({ token: process.env.QSTASH_TOKEN! })
 
 const r = new Receiver({
   currentSigningKey: process.env.QSTASH_CURRENT_SIGNING_KEY!,
@@ -44,10 +45,18 @@ export async function verifyUpstashSignature(req: NextRequest) {
   return JSON.parse(body)
 }
 
+export async function getUpstashQueue(queueName: string) {
+  const queue = client.queue({ queueName })
+  const queueInfo = await queue.get()
+  return queueInfo
+}
+
 export async function publishToUpstash<Route extends UpstashRoute>(
   url: Route,
   message: RouteMessageMap[Route],
   options?: {
+    queue?: string
+    queueParallelism?: number
     delay?: number
     absoluteDelay?: string
     upstashMethod?: 'GET' | 'PUT' | 'POST' | 'DELETE' | 'PATCH'
@@ -55,6 +64,18 @@ export async function publishToUpstash<Route extends UpstashRoute>(
 ) {
   console.log('Publishing to Upstash')
   console.log('URL: ', url)
+  const urlPath = `https://${process.env.NEXT_PUBLIC_SITE_URL}${url}`
+  if (options?.queue) {
+    const queue = client.queue({ queueName: options.queue })
+    if (options.queueParallelism) {
+      queue.upsert({ parallelism: options.queueParallelism })
+    }
+    await queue.enqueueJSON({
+      url: urlPath,
+      body: message,
+    })
+    return
+  }
   if (options?.absoluteDelay) {
     // figure out seconds of absolute delay
     const secondsFromNow =
@@ -84,18 +105,13 @@ export async function publishToUpstash<Route extends UpstashRoute>(
     headers['Content-Encoding'] = 'gzip'
     messageToSend = await gzip(messageToSend)
   }
-  console.log(
-    `${process.env.QSTASH_URL}https://${process.env.NEXT_PUBLIC_SITE_URL}${url}`
-  )
+  console.log(`${process.env.QSTASH_URL}${urlPath}`)
 
-  const response = await fetch(
-    `${process.env.QSTASH_URL}https://${process.env.NEXT_PUBLIC_SITE_URL}${url}`,
-    {
-      method: 'POST',
-      headers,
-      body: messageToSend,
-    }
-  )
+  const response = await fetch(`${process.env.QSTASH_URL}${urlPath}`, {
+    method: 'POST',
+    headers,
+    body: messageToSend,
+  })
   if (response.ok) {
     console.log('Successfully published to Upstash')
     return await response.json()
@@ -105,20 +121,4 @@ export async function publishToUpstash<Route extends UpstashRoute>(
   // console.log('Message: ', message)
   // console.log(await response.json())
   throw new Error('Error publishing to Upstash')
-}
-
-export function addDelayToCurrentUnixTimestamp(delayMilliseconds: number) {
-  // Get the current Unix timestamp
-  const currentUnixTimestamp = Math.floor(Date.now() / 1000)
-
-  // Convert Unix timestamp to milliseconds
-  const timestampInMilliseconds = currentUnixTimestamp * 1000
-  console.log(delayMilliseconds)
-  // Add the delay in milliseconds
-  const newTimestampInMilliseconds = timestampInMilliseconds + delayMilliseconds
-
-  // Convert back to Unix timestamp (seconds since epoch)
-  const newUnixTimestamp = Math.floor(newTimestampInMilliseconds / 1000)
-
-  return newUnixTimestamp.toString()
 }
