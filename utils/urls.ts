@@ -16,7 +16,7 @@ export async function storeUrls(urlQueueKey: string, urls: string[]) {
 
 export async function isProcessingComplete(
   urlQueueKey: string,
-  urlProcessedKey: string
+  urlProcessedKey: string,
 ) {
   const totalUrls = await redis.llen(urlQueueKey)
   const processedUrls = await redis.hlen(urlProcessedKey)
@@ -65,12 +65,14 @@ Do not include any explanation or additional text outside of this JSON object.`,
         throw new Error('Failed to summarize URL')
       }
       const urlSummary = urlResponse.parse(
-        JSON.parse(response.choices[0].message.content ?? '')
+        JSON.parse(response.choices[0].message.content ?? ''),
       )
       if (!urlSummary.skipUrl) {
-        console.log(`Summary for ${url}: ${urlSummary.summary}`)
         await redis.hset(urlBodiesKey, {
-          [url as string]: { ...body, summary: urlSummary.summary },
+          [url.trim() as string]: {
+            ...body,
+            summary: urlSummary.summary.trim(),
+          },
         })
         await redis.expire(urlBodiesKey, 86400) // Set TTL for 24 hours
       }
