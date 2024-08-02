@@ -5,6 +5,7 @@ import { RouteMessageMap } from '@/types/upstash'
 import { openai } from '@/utils/ai'
 import { redis } from '@/utils/redis'
 import { verifyUpstashSignature } from '@/utils/upstash'
+export const maxDuration = 300
 
 export async function POST(req: NextRequest) {
   console.log('POST /api/notes/summarize')

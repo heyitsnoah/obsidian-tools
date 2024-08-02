@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(
       { status: 'File created/updated successfully', fileId },
-      { status: 200 }
+      { status: 200 },
     )
   } catch (error) {
     console.error('Error in POST handler:', error)
@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
         message: 'Failed to create or update file',
         details: `GitHub Username: ${process.env.GITHUB_USERNAME}, Repo: ${process.env.GITHUB_REPO}, Path: ${process.env.OBSIDIAN_INBOX_PATH}`,
       },
-      { status: 500 }
+      { status: 500 },
     )
   }
 }

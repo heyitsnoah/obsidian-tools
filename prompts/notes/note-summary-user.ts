@@ -22,16 +22,16 @@ export function getNoteSummarizationPrompt(filename: string, content: string) {
     - Use nested bullet points to show relationships between ideas
     
     Use this exact formatting consistently throughout your summary:
-    - Main points: Use ## (second-level headers)
+    - Main points: Use #### (fourth-level headers)
     - Subpoints: Use - (hyphens)
     - Further nested points: Indent with 2 spaces, then use -
     - Do not use any other symbols for bullet points
     
     Example of correct formatting:
-    ## Main point
+    #### Main point
     - Subpoint
       - Further nested point
-    ## Another main point
+    #### Another main point
     - Another subpoint
     
     Include in your summary, if present in the note:
@@ -68,14 +68,14 @@ export function getDiffSummarizationPrompt(diffContent: string) {
     - Use nested bullet points to show relationships between changes
     
     Use this exact formatting consistently throughout your summary:
-    - Main points (file changes or major sections): Use ## (second-level headers)
+    - Main points (file changes or major sections): Use #### (fourth-level headers)
     - Additions: Use - (hyphens) and prefix with "[ADDED]"
     - Deletions: Use - (hyphens) and prefix with "[REMOVED]"
     - Unchanged content or context: Use - (hyphens) and prefix with "[UNCHANGED]"
     - Comments on changes: Indent with 2 spaces, then use - (hyphens)
     
     Example of correct formatting:
-    ## Changes to example.txt
+    #### Changes to example.txt
     - [ADDED] Line 5: Added new section on AI applications
       - This addition provides up-to-date information on recent developments
     - [REMOVED] Lines 10-12: Removed outdated references

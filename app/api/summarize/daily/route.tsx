@@ -187,7 +187,7 @@ export async function POST(req: NextRequest) {
   const responseString = (response.content[0] as TextBlock).text
   const filename = `${process.env.DAILY_SUMMARY_NAME} ${dayjs().format(
     'YYYY-MM-DD',
-  )}${process.env.NODE_ENV === 'development' && `-DEV`}.md`
+  )}${process.env.NODE_ENV === 'development' ? `-DEV` : ''}.md`
   const parsed = await (async () => {
     try {
       return AiSummaryFormat.parse(JSON.parse(responseString))
