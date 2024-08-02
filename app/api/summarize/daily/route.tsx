@@ -147,10 +147,9 @@ export async function POST(req: NextRequest) {
   console.log('/api/summarize/daily')
   console.log(body)
 
-  const keys = getQueueKeys(queue)
-  const urlBodies: UrlBodies | null = await redis.hgetall(keys.urlsKey)
+  const urlBodies: UrlBodies | null = await redis.hgetall(body.urlsKey)
   const notes: Record<string, string> | null = await redis.hgetall(
-    keys.notesKey,
+    body.notesKey,
   )
   let notesArray
   if (notes) {
@@ -185,9 +184,7 @@ export async function POST(req: NextRequest) {
     return new Response('No content found in response', { status: 500 })
   }
   const responseString = (response.content[0] as TextBlock).text
-  const filename = `${process.env.DAILY_SUMMARY_NAME} ${dayjs().format(
-    'YYYY-MM-DD',
-  )}${process.env.NODE_ENV === 'development' ? `-DEV` : ''}.md`
+  const filename = `${process.env.DAILY_SUMMARY_NAME} ${body.date}${process.env.NODE_ENV === 'development' ? `-DEV` : ''}.md`
   const parsed = await (async () => {
     try {
       return AiSummaryFormat.parse(JSON.parse(responseString))
@@ -196,7 +193,7 @@ export async function POST(req: NextRequest) {
       return await extractJson(responseString, AiSummaryFormat)
     }
   })()
-  let responseContent = `# Daily Summary for ${dayjs().format('MMMM D, YYYY')}\n## Overall Summary\n${parsed.overallSummary}\n## Interesting Ideas\n- ${parsed.interestingIdeas.join('\n- ')}## Common Themes ${parsed.commonThemes.join('\n- ')}\n## Questions for Exploration\n- ${parsed.questionsForExploration.join('\n- ')}\n## Possible Next Steps\n- ${parsed.nextSteps.join('\n- ')}`
+  let responseContent = `# Daily Summary for ${dayjs(body.date).format('MMMM D, YYYY')}\n## Overall Summary\n${parsed.overallSummary}\n## Interesting Ideas\n- ${parsed.interestingIdeas.join('\n- ')}## Common Themes ${parsed.commonThemes.join('\n- ')}\n## Questions for Exploration\n- ${parsed.questionsForExploration.join('\n- ')}\n## Possible Next Steps\n- ${parsed.nextSteps.join('\n- ')}`
 
   if (notes) {
     const insertNotes = (
@@ -209,7 +206,7 @@ export async function POST(req: NextRequest) {
         })
         .join('\n')
 
-      return `${responseContent}\n---\n\n## Notes\n${notesList}`
+      return `${responseContent}\n---\n## Notes\n${notesList}`
     }
     responseContent = insertNotes(responseContent, notes)
   }
@@ -228,7 +225,7 @@ export async function POST(req: NextRequest) {
         })
         .join('\n')
 
-      return `${responseContent}\n---\n\n## Urls\n${urlsList}`
+      return `${responseContent}\n---\n## Urls\n${urlsList}`
     }
     responseContent = insertUrls(responseContent, urlBodies)
   }
@@ -322,7 +319,7 @@ export async function GET(req: NextRequest) {
       },
     )
   }
-  await publishToUpstash('/api/summarize/daily', keys.notesKey, {
+  await publishToUpstash('/api/summarize/daily', keys, {
     queue,
   })
   return new Response('ok', { status: 200 })

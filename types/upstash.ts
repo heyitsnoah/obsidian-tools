@@ -18,7 +18,7 @@ export type RouteMessageMap = {
     keys: QueueKeys
   }
 
-  '/api/summarize/daily': string
+  '/api/summarize/daily': QueueKeys
 }
 
 // Your UpstashRoute type remains the same
