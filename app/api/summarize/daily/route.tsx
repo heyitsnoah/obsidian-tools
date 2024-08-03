@@ -8,138 +8,22 @@ import {
   AiSummaryFormat,
   getDailySummarySystemPrompt,
 } from '@/prompts/summarize/daily-summary-user'
-import { RecentDiff, RecentFile } from '@/types/files'
 import { RouteMessageMap } from '@/types/upstash'
 import { UrlBodies } from '@/types/urls'
 import { anthropic, extractJson, openai } from '@/utils/ai'
-import { createOrUpdateFile, octokit } from '@/utils/github'
+import { createOrUpdateFile, getRecentFiles } from '@/utils/github'
 import { redis } from '@/utils/redis'
 import { getQueueKeys } from '@/utils/redis-queue'
 import { publishToUpstash, verifyUpstashSignature } from '@/utils/upstash'
 export const maxDuration = 300
 export const dynamic = 'force-dynamic'
-const EXCLUDED_TERMS: string[] = []
-if (process.env.DAILY_SUMMARY_NAME) {
-  EXCLUDED_TERMS.push(process.env.DAILY_SUMMARY_NAME)
-}
-if (process.env.WEEKLY_SUMMARY_NAME) {
-  EXCLUDED_TERMS.push(process.env.WEEKLY_SUMMARY_NAME)
-}
-if (process.env.MONTHLY_SUMMARY_NAME) {
-  EXCLUDED_TERMS.push(process.env.MONTHLY_SUMMARY_NAME)
-}
+
 const queue = 'daily-note-queue'
 
 const UsefulUrls = z.object({
   usefulUrls: z.array(z.string()),
 })
 
-async function getRecentFiles(
-  owner: string,
-  repo: string,
-): Promise<{ files: RecentFile[]; diffs: RecentDiff[] }> {
-  const twentyFourHoursAgo = new Date(
-    Date.now() - 24 * 60 * 60 * 1000,
-  ).toISOString()
-
-  try {
-    const { data: commits } = await octokit.rest.repos.listCommits({
-      owner,
-      repo,
-      since: twentyFourHoursAgo,
-    })
-
-    const recentFiles: Set<string> = new Set()
-
-    for (const commit of commits) {
-      const { data: commitData } = await octokit.rest.repos.getCommit({
-        owner,
-        repo,
-        ref: commit.sha,
-      })
-
-      commitData.files?.forEach((file) => {
-        if (
-          file.filename.endsWith('.md') &&
-          !EXCLUDED_TERMS.some((term) => file.filename.includes(term))
-        ) {
-          recentFiles.add(file.filename)
-        }
-      })
-    }
-
-    const files: RecentFile[] = []
-    const diffs: RecentDiff[] = []
-
-    for (const filename of recentFiles) {
-      try {
-        console.log(`Fetching content for file: ${filename}`)
-        const listCommits = await octokit.rest.repos.listCommits({
-          owner,
-          repo,
-          path: filename,
-        })
-        const oldestCommit = listCommits.data.reduce((oldest, commit) => {
-          const commitDate = new Date(commit.commit.committer?.date || '')
-          return commitDate < oldest ? commitDate : oldest
-        }, new Date())
-
-        if (dayjs().diff(oldestCommit, 'hours') >= 24) {
-          console.log(
-            `File ${filename} is older than 24 hours, fetching diff...`,
-          )
-          const latestCommit = listCommits.data[0].sha
-          const { data: diffData } = await octokit.rest.repos.compareCommits({
-            owner,
-            repo,
-            base: `${latestCommit}~1`,
-            head: latestCommit,
-          })
-          const fileDiff = diffData.files?.find(
-            (file) => file.filename === filename,
-          )
-          if (fileDiff && fileDiff.patch) {
-            diffs.push({ filename, diff: fileDiff.patch })
-          }
-        } else {
-          const { data } = await octokit.rest.repos.getContent({
-            owner,
-            repo,
-            path: filename,
-          })
-          if (data && typeof data === 'object' && 'type' in data) {
-            if (
-              data.type === 'file' &&
-              'content' in data &&
-              typeof data.content === 'string'
-            ) {
-              const body = Buffer.from(data.content, 'base64').toString('utf-8')
-              files.push({ filename, body })
-            } else if (data.type === 'symlink' || data.type === 'submodule') {
-              console.log(`${filename} is a ${data.type}, skipping...`)
-            } else {
-              console.log(`Unexpected data type for ${filename}: ${data.type}`)
-            }
-          } else {
-            console.log(`Unexpected data format for ${filename}`)
-          }
-        }
-      } catch (error) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        if ((error as any).status === 404) {
-          console.log(`File not found (possibly deleted): ${filename}`)
-        } else {
-          console.error(`Error fetching content for ${filename}:`, error)
-        }
-      }
-    }
-
-    return { files, diffs }
-  } catch (error) {
-    console.error('Error in getRecentFiles:', error)
-    throw error
-  }
-}
 type RedisNotes = { [key: string]: string }
 export async function POST(req: NextRequest) {
   const body: RouteMessageMap['/api/summarize/daily'] =
@@ -202,7 +86,7 @@ export async function POST(req: NextRequest) {
     ): string => {
       const notesList = Object.entries(notes)
         .map(([title, summary]) => {
-          return `\n### ${title.replace('.md', '')}\n${summary.replaceAll('<summary>', '').replaceAll('</summary>', '')}`
+          return `### [[${title.replace('.md', '')}]]\n${summary.replaceAll('<summary>', '').replaceAll('</summary>', '').trim()}`
         })
         .join('\n')
 
@@ -249,6 +133,7 @@ export async function GET(req: NextRequest) {
   const repo = process.env.GITHUB_REPO!
 
   const recentFiles = await getRecentFiles(owner, repo)
+
   // return new Response('ok', { status: 200 })
   const keys = getQueueKeys(queue)
 
