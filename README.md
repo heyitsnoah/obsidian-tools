@@ -224,6 +224,7 @@ feedback and contributions are welcome!
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fheyitsnoah%2Fobsidian-tools)
 
-## Cool
+## License
 
-Yes
+This project is licensed under the Server Side Public License (SSPL). See the
+[LICENSE](LICENSE.txt) file for details.

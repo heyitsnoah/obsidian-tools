@@ -2,6 +2,7 @@
   "name": "obsidian-tools",
   "version": "0.1.0",
   "private": true,
+  "license": "SSPL-1.0",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
