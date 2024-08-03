@@ -19,6 +19,7 @@ export type RouteMessageMap = {
   }
 
   '/api/summarize/daily': QueueKeys
+  '/api/summarize/weekly': { weekStartDate: string; weekEndDate: string }
 }
 
 // Your UpstashRoute type remains the same
