@@ -3,6 +3,74 @@
 These are a bunch of random tools I've found useful with Obsidian + Github sync
 (the latter is required for these to work).
 
+Right now there are three main things it does:
+
+1. **Email to Obsidian:** Set up an email address that can catch emails and add
+   them as notes to your Obsidian.
+2. **Daily Summaries:** Writes a Daily Summary note each day of your new notes +
+   changes.
+3. **Weekly Sumary:** Writes a weekly summary note each week from your Daily
+   Summaries.
+
+Runs on [Vercel](https://vercel.com) with the help of a few other services.
+
+## Example Summaries
+
+To give you a sense, here's the structure of the Daily and Weekly Summaries:
+
+### Daily Summaries
+
+Daily Summaries are automatically generated each day and provide a concise
+overview of the day's activities, insights, and key information. They typically
+include:
+
+1. **Overall Summary**: A brief paragraph summarizing the main events,
+   discussions, and developments of the day.
+
+2. **Interesting Ideas**: A bullet-point list of noteworthy concepts or thoughts
+   that emerged during the day.
+
+3. **Common Themes**: Recurring topics or patterns observed across various
+   activities or discussions.
+
+4. **Questions for Exploration**: Open-ended questions or areas identified for
+   further investigation.
+
+5. **Possible Next Steps**: Actionable items or potential follow-up tasks based
+   on the day's events.
+
+6. **Notes**: Detailed breakdowns of specific meetings, conversations, or
+   activities that occurred during the day.
+
+7. **URLs**: A list of relevant links mentioned or accessed during the day, with
+   brief descriptions of their content.
+
+### Weekly Summaries
+
+Weekly Summaries are generated at the end of each week, providing a higher-level
+overview of the week's activities and insights. They typically include:
+
+1. **Overall Summary**: A comprehensive paragraph or two summarizing the main
+   themes, developments, and achievements of the week.
+
+2. **Strategic Implications**: Key insights or decisions that could have
+   long-term impacts on projects or strategies.
+
+3. **Challenges & Opportunities**: A breakdown of obstacles faced and potential
+   areas for growth or improvement identified during the week.
+
+4. **Key Developments & Trends**: Significant progress made on projects or
+   notable trends observed in the industry or work environment.
+
+5. **Long Term Implications**: Potential long-range effects of the week's events
+   or decisions on future projects or strategies.
+
+6. **Goals for Next Week**: Specific objectives or tasks to focus on in the
+   coming week, based on the current week's outcomes.
+
+These summaries serve as a quick reference for tracking progress, identifying
+patterns, and maintaining focus on important goals and ideas over time.
+
 ## Required Services
 
 - Inbound Email: [Postmark](https://postmark.com) (You could also probably use
