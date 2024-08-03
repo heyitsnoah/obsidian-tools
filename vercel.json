@@ -3,6 +3,10 @@
     {
       "path": "/api/summarize/daily",
       "schedule": "0 23 * * *"
+    },
+    {
+      "path": "/api/summarize/weekly",
+      "schedule": "0 * * * *"
     }
   ]
 }
