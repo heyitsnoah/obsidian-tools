@@ -299,3 +299,48 @@ export async function getRecentFiles(
     throw error
   }
 }
+
+export async function getDailySummaries(
+  owner: string,
+  repo: string,
+): Promise<RecentFile[]> {
+  const today = dayjs().startOf('day')
+  const dailySummaryName = process.env.DAILY_SUMMARY_NAME || 'Daily Summary'
+  const summaries: RecentFile[] = []
+
+  try {
+    for (let i = 0; i < 7; i++) {
+      const date = today.subtract(i, 'day')
+      const formattedDate = date.format('YYYY-MM-DD')
+      const searchQuery = `${dailySummaryName} ${formattedDate} in:path repo:${owner}/${repo}`
+
+      console.log(`Searching for: ${searchQuery}`)
+
+      const searchResult = await octokit.rest.search.code({
+        q: searchQuery,
+      })
+
+      if (searchResult.data.items.length > 0) {
+        const item = searchResult.data.items[0]
+        const { data: fileData } = await octokit.rest.repos.getContent({
+          owner,
+          repo,
+          path: item.path,
+        })
+
+        if ('content' in fileData && typeof fileData.content === 'string') {
+          const body = Buffer.from(fileData.content, 'base64').toString('utf-8')
+          summaries.push({ filename: item.path, body })
+          console.log(`+ Fetched daily summary for ${formattedDate}`)
+        }
+      } else {
+        console.log(`Daily summary not found for ${formattedDate}`)
+      }
+    }
+
+    return summaries.reverse() // Reverse to get chronological order
+  } catch (error) {
+    console.error('Error in getDailySummaries:', error)
+    throw error
+  }
+}
