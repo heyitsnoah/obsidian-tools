@@ -83,6 +83,55 @@ patterns, and maintaining focus on important goals and ideas over time.
   queue service and for their Redis serverless. Create a new Redis DB and a
   Qstash queue and put the variables in the env file.
 
+## Setting up Google Calendar Integration
+
+To use the Google Calendar integration, we'll set up a Google Cloud service
+account. Follow these steps:
+
+1. Go to the [Google Cloud Console](https://console.cloud.google.com/).
+2. Create a new project or select an existing one.
+3. Enable the Google Calendar API for your project.
+4. Go to "IAM & Admin" > "Service Accounts".
+5. Click "Create Service Account".
+6. Give it a name (e.g., "Obsidian Tools"), and click "Create".
+7. For the role, you can select "Project" > "Editor" for full access, or choose
+   a more restrictive role if preferred.
+8. Click "Continue" and then "Done".
+9. Find your new service account in the list and click on it.
+10. Go to the "Keys" tab and click "Add Key" > "Create new key".
+11. Choose JSON as the key type and click "Create". This will download a JSON
+    file with your credentials.
+
+Now, set up your environment variables:
+
+1. Open the downloaded JSON file.
+2. In your `.env` file, add the following:
+
+   ```
+   GOOGLE_CLIENT_EMAIL=your-service-account-email@your-project.iam.gserviceaccount.com
+   GOOGLE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nYour Private Key Here\n-----END PRIVATE KEY-----\n"
+   CALENDAR_NAME=your-calendar-email@example.com
+   ```
+
+   Replace `your-service-account-email@your-project.iam.gserviceaccount.com`
+   with the `client_email` from your JSON file. For the `GOOGLE_PRIVATE_KEY`,
+   copy the entire private key from the JSON file, including the "-----BEGIN
+   PRIVATE KEY-----" and "-----END PRIVATE KEY-----" parts. Set `CALENDAR_NAME`
+   to the email address of the Google Calendar you want to access.
+
+3. Share your calendar:
+   - Go to your Google Calendar
+   - Find the calendar you want to access under "My calendars"
+   - Click the three dots next to the calendar name and select "Settings and
+     sharing"
+   - Scroll down to "Share with specific people"
+   - Click "Add people" and enter your service account email
+   - Set the permission to "Make changes to events" or "See all event details"
+     depending on your needs
+
+Remember to never commit your `.env` file to version control. If deploying to
+Vercel, add these environment variables in your Vercel project settings.
+
 ## Optional Services
 
 - Proxy: I like [IPRoyal](https://iproyal.com) for proxy. This helps with
