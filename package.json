@@ -18,6 +18,7 @@
     "cheerio": "^1.0.0-rc.12",
     "dayjs": "^1.11.12",
     "get-urls": "^12.1.0",
+    "googleapis": "^140.0.1",
     "jsonwebtoken": "^9.0.2",
     "next": "14.2.5",
     "octokit": "^4.0.2",
