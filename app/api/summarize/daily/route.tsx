@@ -11,6 +11,7 @@ import {
 import { RouteMessageMap } from '@/types/upstash'
 import { UrlBodies } from '@/types/urls'
 import { anthropic, extractJson, openai } from '@/utils/ai'
+import { formatCalendarEvents, getDaysEvents } from '@/utils/calendar'
 import { createOrUpdateFile, getRecentFiles } from '@/utils/github'
 import { redis } from '@/utils/redis'
 import { getQueueKeys } from '@/utils/redis-queue'
@@ -77,7 +78,12 @@ export async function POST(req: NextRequest) {
       return await extractJson(responseString, AiSummaryFormat)
     }
   })()
-  let responseContent = `# Daily Summary for ${dayjs(body.date).format('MMMM D, YYYY')}\n## Overall Summary\n${parsed.overallSummary}\n## Interesting Ideas\n- ${parsed.interestingIdeas.join('\n- ')}## Common Themes ${parsed.commonThemes.join('\n- ')}\n## Questions for Exploration\n- ${parsed.questionsForExploration.join('\n- ')}\n## Possible Next Steps\n- ${parsed.nextSteps.join('\n- ')}`
+  let eventsSection
+  if (process.env.GOOGLE_CLIENT_EMAIL && process.env.GOOGLE_PRIVATE_KEY) {
+    const events = await getDaysEvents()
+    eventsSection = formatCalendarEvents(events)
+  }
+  let responseContent = `# Daily Summary for ${dayjs(body.date).format('MMMM D, YYYY')}\n${eventsSection ? `## Calendar\n${eventsSection}` : ''}## Overall Summary\n${parsed.overallSummary}\n## Interesting Ideas\n- ${parsed.interestingIdeas.join('\n- ')}## Common Themes ${parsed.commonThemes.join('\n- ')}\n## Questions for Exploration\n- ${parsed.questionsForExploration.join('\n- ')}\n## Possible Next Steps\n- ${parsed.nextSteps.join('\n- ')}`
 
   if (notes) {
     const insertNotes = (
