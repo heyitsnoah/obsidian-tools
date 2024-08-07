@@ -83,7 +83,10 @@ export async function GET(req: NextRequest) {
   ) {
     return new Response('Unauthorized', { status: 401 })
   }
-
+  if (!process.env.YOUR_NAME || !process.env.OPENAI_API_KEY) {
+    // Treating this as if user does not want weekly summaries.
+    return new Response('Missing environment variables', { status: 200 })
+  }
   const timezone = process.env.TIMEZONE || 'America/New_York'
   const weeklySummaryDay = process.env.WEEKLY_SUMMARY_DAY || 'Sunday'
   const weeklySummaryTime = process.env.WEEKLY_SUMMARY_TIME || '09:00'

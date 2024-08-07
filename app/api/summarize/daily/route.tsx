@@ -136,6 +136,10 @@ export async function GET(req: NextRequest) {
   ) {
     return new Response('Unauthorized', { status: 401 })
   }
+  if (!process.env.YOUR_NAME || !process.env.OPENAI_API_KEY) {
+    // Treating this as if user does not want daily summaries.
+    return new Response('Missing environment variables', { status: 200 })
+  }
   const owner = process.env.GITHUB_USERNAME!
   const repo = process.env.GITHUB_REPO!
 
