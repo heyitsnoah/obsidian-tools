@@ -30,18 +30,19 @@ export async function POST(req: NextRequest) {
   const body: RouteMessageMap['/api/summarize/daily'] =
     await verifyUpstashSignature(req)
   console.log('/api/summarize/daily')
-  console.log(body)
 
   const urlBodies: UrlBodies | null = await redis.hgetall(body.urlsKey)
   const notes: Record<string, string> | null = await redis.hgetall(
     body.notesKey,
   )
   let notesArray
-  if (notes) {
+  if (notes && Object.keys(notes).length > 0) {
     notesArray = Object.entries(notes).map(([filename, note]) => ({
       title: filename,
       summary: note ?? '',
     }))
+  } else {
+    return new Response('No notes found', { status: 200 })
   }
   let urlsArray
   if (urlBodies) {
