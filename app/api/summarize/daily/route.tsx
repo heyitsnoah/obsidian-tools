@@ -83,7 +83,7 @@ export async function POST(req: NextRequest) {
     const events = await getDaysEvents()
     eventsSection = formatCalendarEvents(events)
   }
-  let responseContent = `# Daily Summary for ${dayjs(body.date).format('MMMM D, YYYY')}\n${eventsSection ? `## Calendar\n${eventsSection}` : ''}## Overall Summary\n${parsed.overallSummary}\n## Interesting Ideas\n- ${parsed.interestingIdeas.join('\n- ')}## Common Themes ${parsed.commonThemes.join('\n- ')}\n## Questions for Exploration\n- ${parsed.questionsForExploration.join('\n- ')}\n## Possible Next Steps\n- ${parsed.nextSteps.join('\n- ')}`
+  let responseContent = `# Daily Summary for ${dayjs(body.date).format('MMMM D, YYYY')}\n${eventsSection ? `## Calendar\n${eventsSection}` : ''}## Overall Summary\n${parsed.overallSummary}\n## Interesting Ideas\n- ${parsed.interestingIdeas.join('\n- ')}\n## Common Themes ${parsed.commonThemes.join('\n- ')}\n## Questions for Exploration\n- ${parsed.questionsForExploration.join('\n- ')}\n## Possible Next Steps\n- ${parsed.nextSteps.join('\n- ')}`
 
   if (notes) {
     const insertNotes = (
