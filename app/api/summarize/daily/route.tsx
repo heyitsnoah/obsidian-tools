@@ -82,7 +82,7 @@ export async function POST(req: NextRequest) {
   let eventsSection
   if (process.env.GOOGLE_CLIENT_EMAIL && process.env.GOOGLE_PRIVATE_KEY) {
     const events = await getDaysEvents()
-    eventsSection = formatCalendarEvents(events)
+    eventsSection = await formatCalendarEvents(events)
   }
   let responseContent = `# Daily Summary for ${dayjs(body.date).format('MMMM D, YYYY')}\n${eventsSection ? `## Calendar\n${eventsSection}` : ''}## Overall Summary\n${parsed.overallSummary}\n## Interesting Ideas\n- ${parsed.interestingIdeas.join('\n- ')}\n## Common Themes ${parsed.commonThemes.join('\n- ')}\n## Questions for Exploration\n- ${parsed.questionsForExploration.join('\n- ')}\n## Possible Next Steps\n- ${parsed.nextSteps.join('\n- ')}`
 
