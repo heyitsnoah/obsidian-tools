@@ -30,18 +30,19 @@ export async function POST(req: NextRequest) {
   const body: RouteMessageMap['/api/summarize/daily'] =
     await verifyUpstashSignature(req)
   console.log('/api/summarize/daily')
-  console.log(body)
 
   const urlBodies: UrlBodies | null = await redis.hgetall(body.urlsKey)
   const notes: Record<string, string> | null = await redis.hgetall(
     body.notesKey,
   )
   let notesArray
-  if (notes) {
+  if (notes && Object.keys(notes).length > 0) {
     notesArray = Object.entries(notes).map(([filename, note]) => ({
       title: filename,
       summary: note ?? '',
     }))
+  } else {
+    return new Response('No notes found', { status: 200 })
   }
   let urlsArray
   if (urlBodies) {
@@ -81,9 +82,9 @@ export async function POST(req: NextRequest) {
   let eventsSection
   if (process.env.GOOGLE_CLIENT_EMAIL && process.env.GOOGLE_PRIVATE_KEY) {
     const events = await getDaysEvents()
-    eventsSection = formatCalendarEvents(events)
+    eventsSection = await formatCalendarEvents(events)
   }
-  let responseContent = `# Daily Summary for ${dayjs(body.date).format('MMMM D, YYYY')}\n${eventsSection ? `## Calendar\n${eventsSection}` : ''}## Overall Summary\n${parsed.overallSummary}\n## Interesting Ideas\n- ${parsed.interestingIdeas.join('\n- ')}## Common Themes ${parsed.commonThemes.join('\n- ')}\n## Questions for Exploration\n- ${parsed.questionsForExploration.join('\n- ')}\n## Possible Next Steps\n- ${parsed.nextSteps.join('\n- ')}`
+  let responseContent = `# Daily Summary for ${dayjs(body.date).format('MMMM D, YYYY')}\n${eventsSection ? `## Calendar\n${eventsSection}` : ''}## Overall Summary\n${parsed.overallSummary}\n## Interesting Ideas\n- ${parsed.interestingIdeas.join('\n- ')}\n## Common Themes\n${parsed.commonThemes.join('\n- ')}\n## Questions for Exploration\n- ${parsed.questionsForExploration.join('\n- ')}\n## Possible Next Steps\n- ${parsed.nextSteps.join('\n- ')}`
 
   if (notes) {
     const insertNotes = (
@@ -134,6 +135,10 @@ export async function GET(req: NextRequest) {
     process.env.NODE_ENV !== 'development'
   ) {
     return new Response('Unauthorized', { status: 401 })
+  }
+  if (!process.env.YOUR_NAME || !process.env.OPENAI_API_KEY) {
+    // Treating this as if user does not want daily summaries.
+    return new Response('Missing environment variables', { status: 200 })
   }
   const owner = process.env.GITHUB_USERNAME!
   const repo = process.env.GITHUB_REPO!

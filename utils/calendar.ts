@@ -10,37 +10,46 @@ const auth = new google.auth.GoogleAuth({
 
 export const calendar = google.calendar({ version: 'v3', auth })
 
-export async function getDaysEvents() {
+export async function getDaysEvents(): Promise<calendar_v3.Schema$Event[]> {
+  const calendarResponse = await calendar.calendars.get({
+    calendarId: process.env.CALENDAR_NAME,
+  })
+
+  const calendarTimezone = calendarResponse.data.timeZone || 'UTC'
   const now = new Date()
-  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-  const endOfDay = new Date(
-    now.getFullYear(),
-    now.getMonth(),
-    now.getDate() + 1,
+  const startOfDay = new Date(
+    now.toLocaleString('en-US', { timeZone: calendarTimezone }),
   )
+  startOfDay.setHours(0, 0, 0, 0)
+
+  const endOfDay = new Date(startOfDay)
+  endOfDay.setDate(endOfDay.getDate() + 1)
 
   const response = await calendar.events.list({
     calendarId: process.env.CALENDAR_NAME,
     timeMin: startOfDay.toISOString(),
     timeMax: endOfDay.toISOString(),
+    timeZone: calendarTimezone,
     singleEvents: true,
     orderBy: 'startTime',
     fields:
       'items(id,summary,description,location,start,end,attendees,organizer,visibility,status,created,updated)',
   })
 
-  const events = []
-  if (response.data.items) {
-    for (const event of response.data.items) {
-      if (event.status === 'confirmed') {
-        events.push(event)
-      }
-    }
-  }
-  return events
+  return (
+    response.data.items?.filter((event) => event.status === 'confirmed') || []
+  )
 }
 
-export function formatCalendarEvents(events: calendar_v3.Schema$Event[]) {
+export async function formatCalendarEvents(
+  events: calendar_v3.Schema$Event[],
+): Promise<string> {
+  const calendarResponse = await calendar.calendars.get({
+    calendarId: process.env.CALENDAR_NAME,
+  })
+
+  const calendarTimezone = calendarResponse.data.timeZone || 'UTC'
+
   return events
     .filter(
       (event): event is calendar_v3.Schema$Event =>
@@ -59,14 +68,13 @@ export function formatCalendarEvents(events: calendar_v3.Schema$Event[]) {
 
       let dateString: string
       if (isAllDay) {
-        dateString = `Start: ${startDate.toLocaleDateString('en-US', { timeZone: 'America/New_York', month: 'long', day: 'numeric', year: 'numeric' })} (All day)\n  - End: ${endDate.toLocaleDateString('en-US', { timeZone: 'America/New_York', month: 'long', day: 'numeric', year: 'numeric' })} (All day)`
+        dateString = `Start: ${startDate.toLocaleDateString('en-US', { timeZone: calendarTimezone, month: 'long', day: 'numeric', year: 'numeric' })} (All day)\n  - End: ${endDate.toLocaleDateString('en-US', { timeZone: calendarTimezone, month: 'long', day: 'numeric', year: 'numeric' })} (All day)`
       } else {
-        dateString = `Date: ${startDate.toLocaleDateString('en-US', { timeZone: 'America/New_York', month: 'long', day: 'numeric', year: 'numeric' })}\n  - Time: ${startDate.toLocaleTimeString('en-US', { timeZone: 'America/New_York', hour: 'numeric', minute: '2-digit' })} - ${endDate.toLocaleTimeString('en-US', { timeZone: 'America/New_York', hour: 'numeric', minute: '2-digit' })} (${event.start?.timeZone || 'Unknown'})`
+        dateString = `Date: ${startDate.toLocaleDateString('en-US', { timeZone: calendarTimezone, month: 'long', day: 'numeric', year: 'numeric' })}\n  - Time: ${startDate.toLocaleTimeString('en-US', { timeZone: calendarTimezone, hour: 'numeric', minute: '2-digit' })} - ${endDate.toLocaleTimeString('en-US', { timeZone: calendarTimezone, hour: 'numeric', minute: '2-digit' })} (${event.start?.timeZone || calendarTimezone})`
       }
 
       return `- **${event.summary || 'Untitled Event'}**
   - ${dateString}
-  - Organizer: ${event.organizer?.displayName || 'Unknown'}
 `
     })
     .join('\n')

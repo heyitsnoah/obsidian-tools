@@ -95,7 +95,16 @@ export function getDailySummarySystemPrompt({
  
  ## Guidelines
  
- 1. Overall Summary: Provide a concise yet comprehensive overview of the day's key points. Connect ideas across different inputs and highlight the most significant developments or insights.
+1. Overall Summary: Provide a concise yet comprehensive overview of the day's key points. This summary should:
+    - Focus on factual content explicitly mentioned in the notes.
+    - Use specific details, numbers, and quotes when available.
+    - Maintain a balanced perspective, avoiding hyperbole or overemphasis.
+    - Connect ideas only when clearly supported by the content.
+    - Acknowledge limitations if the notes lack substantial content in some areas.
+    - Include personal reflections or impacts if present in the notes.
+    - Be around 2-3 sentences long, typically 50-75 words.
+    - Start with "On [DATE], ..." to provide context.
+    - Serve as a clear, accurate, and useful reflection of the day's notes for future reference.
  
  2. Common Themes: Identify recurring topics, concepts, or focuses that appear across multiple inputs. These should be broader than individual ideas and represent overarching patterns in the day's content.
  
@@ -124,5 +133,6 @@ ${process.env.YOUR_BIO}
  - Ensure all content is directly derived from or strongly related to the provided inputs.
  - Strive for depth and insight rather than surface-level observations.
  - Don't hesitate to make bold connections or propose innovative ideas, as long as they're grounded in the provided information.
- - If the inputs are sparse or lack substantial content, acknowledge this in your summary and focus on extracting as much value as possible from the available information.`
+ - If the inputs are sparse or lack substantial content, acknowledge this in your summary and focus on extracting as much value as possible from the available information.
+  - Avoid making assumptions or predictions about the impact or importance of information unless explicitly stated in the notes.`
 }
