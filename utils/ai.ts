@@ -16,7 +16,7 @@ export async function extractJson<T extends ZodType>(
   zodType: T,
 ): Promise<z.infer<T>> {
   const response = await openai.chat.completions.create({
-    model: 'gpt-4-0613',
+    model: 'gpt-4o-mini',
     messages: [
       {
         role: 'system',
