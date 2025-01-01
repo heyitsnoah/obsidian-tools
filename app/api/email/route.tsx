@@ -27,7 +27,11 @@ export async function POST(req: NextRequest) {
     const subject = body.Subject || 'Untitled Email'
     const filename = `${sanitizeFilename(subject)}.md`
 
-    const fileId = await createOrUpdateFile({ filename, content: markdown })
+    const fileId = await createOrUpdateFile({
+      path: `${process.env.OBSIDIAN_INBOX_PATH}/Clippings`,
+      filename,
+      content: markdown,
+    })
 
     return NextResponse.json(
       { status: 'File created/updated successfully', fileId },
