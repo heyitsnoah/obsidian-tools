@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
     const filename = `${sanitizeFilename(subject)}.md`
 
     const fileId = await createOrUpdateFile({
-      path: `${process.env.OBSIDIAN_INBOX_PATH}/Clippings`,
+      path: `/Clippings`,
       filename,
       content: markdown,
     })
