@@ -1,13 +1,12 @@
 import type { RouteMessageMap } from '@/types/upstash'
 import type { UrlBodies } from '@/types/urls'
-import type { TextBlock } from '@anthropic-ai/sdk/resources/messages.mjs'
 import type { NextRequest } from 'next/server'
 
 import {
-  AiSummaryFormat,
-  getDailySummarySystemPrompt,
+  DAILY_SUMMARY_SYSTEM_PROMPT,
+  getDailySummaryUserPrompt,
 } from '@/prompts/summarize/daily-summary-user'
-import { anthropic, extractJson, openai } from '@/utils/ai'
+import { O3_CONFIG, openai, validateMarkdownContent } from '@/utils/ai'
 import { formatCalendarEvents, getDaysEvents } from '@/utils/calendar'
 import { createOrUpdateFile, getRecentFiles } from '@/utils/github'
 import { redis } from '@/utils/redis'
@@ -27,6 +26,7 @@ const UsefulUrls = z.object({
 })
 
 type RedisNotes = Record<string, string>;
+
 export async function GET(req: NextRequest) {
   if (
     req.headers.get('Authorization') !== `Bearer ${process.env.CRON_SECRET}` &&
@@ -120,7 +120,8 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const body = await verifyUpstashSignature(req) as RouteMessageMap['/api/summarize/daily']
+  const body: RouteMessageMap['/api/summarize/daily'] =
+    await verifyUpstashSignature(req)
   console.log('/api/summarize/daily')
 
   const urlBodies: null | UrlBodies = await redis.hgetall(body.urlsKey)
@@ -130,7 +131,7 @@ export async function POST(req: NextRequest) {
   let notesArray
   if (notes && Object.keys(notes).length > 0) {
     notesArray = Object.entries(notes).map(([filename, note]) => ({
-      summary: note,
+      summary: note ?? '',
       title: filename,
     }))
   } else {
@@ -139,59 +140,64 @@ export async function POST(req: NextRequest) {
   let urlsArray
   if (urlBodies) {
     urlsArray = Object.entries(urlBodies).map(([url, content]) => ({
-      summary: `${url}: ${content.summary || ''}`,
-      title: content.title || '',
+      summary: `${url}: ${content.summary ?? ''}`,
+      title: content.title ?? '',
     }))
   }
 
-  const response = await anthropic.messages.create({
-    max_tokens: 4000,
+  const formatInputs = (inputs: { summary: string; title: string; }[]) =>
+    inputs.map((i) => `- ${i.title}: ${i.summary}`).join('\n')
+
+  const notesString = `${notesArray ? formatInputs(notesArray) : ''}${
+    urlsArray ? `\n${formatInputs(urlsArray)}` : ''
+  }`.trim()
+
+  const response = await openai.chat.completions.create({
+    ...O3_CONFIG,
     messages: [
+      { content: DAILY_SUMMARY_SYSTEM_PROMPT, role: 'system' },
       {
-        content: getDailySummarySystemPrompt({
-          notes: notesArray || null,
-          urls: urlsArray || null,
+        content: getDailySummaryUserPrompt({
+          date: dayjs(body.date).format('MMMM D, YYYY'),
+          notes: notesString,
         }),
         role: 'user',
       },
     ],
-    model: 'claude-3-5-sonnet-20240620',
   })
 
-  if (!response.content[0]) {
+  if (!response.choices[0]?.message?.content) {
     return new Response('No content found in response', { status: 500 })
   }
-  const responseString = (response.content[0] as TextBlock).text
-  const filename = `${process.env.DAILY_SUMMARY_NAME} ${body.date}${process.env.NODE_ENV === 'development' ? `-DEV` : ''}.md`
-  const parsed = await (async () => {
-    try {
-      return AiSummaryFormat.parse(JSON.parse(responseString))
-    } catch (error) {
-      console.error('Error parsing response:', error)
-      return extractJson(responseString, AiSummaryFormat)
-    }
-  })()
+  const responseString = response.choices[0].message.content
+  
+  if (!validateMarkdownContent(responseString)) {
+    console.error('Invalid markdown content received from AI')
+    return new Response('Invalid content in AI response', { status: 500 })
+  }
+  const filename = `${process.env.DAILY_SUMMARY_NAME} ${body.date}${process.env.NODE_ENV === 'development' ? '-DEV' : ''}.md`
   let eventsSection
   if (process.env.GOOGLE_CLIENT_EMAIL && process.env.GOOGLE_PRIVATE_KEY) {
     const events = await getDaysEvents()
     eventsSection = await formatCalendarEvents(events)
   }
-  let responseContent = `# Daily Summary for ${dayjs(body.date).format('MMMM D, YYYY')}\n${eventsSection ? `## Calendar\n${eventsSection}` : ''}## Overall Summary\n${parsed.overallSummary}\n## Interesting Ideas\n- ${parsed.interestingIdeas.join('\n- ')}\n## Common Themes\n${parsed.commonThemes.join('\n- ')}\n## Questions for Exploration\n- ${parsed.questionsForExploration.join('\n- ')}\n## Possible Next Steps\n- ${parsed.nextSteps.join('\n- ')}`
+  let responseContent = `# Daily Summary for ${dayjs(body.date).format('MMMM D, YYYY')}\n${eventsSection ? `## Calendar\n${eventsSection}\n` : ''}${responseString.trim()}`
 
-  // notes is guaranteed to exist since we checked above
-  const insertNotes = (
-    responseContent: string,
-    notes: RedisNotes,
-  ): string => {
-    const notesList = Object.entries(notes)
-      .map(([title, summary]) => {
-        return `### [[${title.replace('.md', '')}]]\n${summary.replaceAll('<summary>', '').replaceAll('</summary>', '').trim()}`
-      })
-      .join('\n')
+  if (notes) {
+    const insertNotes = (
+      responseContent: string,
+      notes: RedisNotes,
+    ): string => {
+      const notesList = Object.entries(notes)
+        .map(([title, summary]) => {
+          return `### [[${title.replace('.md', '')}]]\n${summary.replaceAll('<summary>', '').replaceAll('</summary>', '').trim()}`
+        })
+        .join('\n')
 
-    return `${responseContent}\n---\n## Notes\n${notesList}`
+      return `${responseContent}\n---\n## Notes\n${notesList}`
+    }
+    responseContent = insertNotes(responseContent, notes)
   }
-  responseContent = insertNotes(responseContent, notes)
   if (urlBodies) {
     const insertUrls = (
       responseContent: string,
@@ -199,8 +205,11 @@ export async function POST(req: NextRequest) {
     ): string => {
       const urlsList = Object.entries(urlBodies)
         .map(([url, content]) => {
-          const { summary, title } = content
-          return `- [${title}](${url})${summary ? `: ${summary}` : ''}`
+          if (content) {
+            const { summary, title } = content
+            return `- [${title}](${url})${summary ? `: ${summary}` : ''}`
+          }
+          return ''
         })
         .join('\n')
 

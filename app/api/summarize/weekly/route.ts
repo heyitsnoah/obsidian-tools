@@ -1,12 +1,12 @@
+import type { RecentFile } from '@/types/files'
 import type { RouteMessageMap } from '@/types/upstash'
-import type { TextBlock } from '@anthropic-ai/sdk/resources/messages.mjs'
 import type { NextRequest } from 'next/server'
 
 import {
-  getWeeklySummarySystemPrompt,
-  WeeklySummaryFormat,
+  getWeeklySummaryUserPrompt,
+  WEEKLY_SUMMARY_SYSTEM_PROMPT,
 } from '@/prompts/summarize/weekly-summary-user'
-import { anthropic, extractJson } from '@/utils/ai'
+import { O3_CONFIG, openai, validateMarkdownContent } from '@/utils/ai'
 import { createOrUpdateFile, getDailySummaries } from '@/utils/github'
 import { publishToUpstash, verifyUpstashSignature } from '@/utils/upstash'
 import dayjs from 'dayjs'
@@ -96,41 +96,50 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const body = await verifyUpstashSignature(req) as RouteMessageMap['/api/summarize/weekly']
+  const body: RouteMessageMap['/api/summarize/weekly'] =
+    await verifyUpstashSignature(req)
   // Add your weekly summary logic here
   const dailySummaries = await getDailySummaries(
     process.env.GITHUB_USERNAME!,
     process.env.GITHUB_REPO!,
   )
 
-  const response = await anthropic.messages.create({
-    max_tokens: 4000,
+  const formatDailySummaries = (summaries: RecentFile[]) =>
+    summaries
+      .map(
+        (summary) =>
+          `### ${summary.filename.replace('.md', '')}\n\n${summary.body}`,
+      )
+      .join('\n\n')
+
+  const summariesString = formatDailySummaries(dailySummaries)
+
+  const response = await openai.chat.completions.create({
+    ...O3_CONFIG,
     messages: [
+      { content: WEEKLY_SUMMARY_SYSTEM_PROMPT, role: 'system' },
       {
-        content: getWeeklySummarySystemPrompt({
-          dailySummaries,
-          weekEndDate: body.weekEndDate,
-          weekStartDate: body.weekStartDate,
+        content: getWeeklySummaryUserPrompt({
+          endDate: body.weekEndDate,
+          startDate: body.weekStartDate,
+          summaries: summariesString,
         }),
         role: 'user',
       },
     ],
-    model: 'claude-3-5-sonnet-20240620',
   })
-  if (!response.content[0]) {
+
+  if (!response.choices[0]?.message?.content) {
     return new Response('No content found in response', { status: 500 })
   }
-  const responseText = (response.content[0] as TextBlock).text
-  const parsed = await (async () => {
-    try {
-      return WeeklySummaryFormat.parse(JSON.parse(responseText))
-    } catch (error) {
-      console.error('Error parsing response:', error)
-      console.log('Response:', responseText)
-      return extractJson(responseText, WeeklySummaryFormat)
-    }
-  })()
-  const responseContent = `# Weekly Summary for ${body.weekStartDate} - ${body.weekEndDate}\n## Overall Summary\n${parsed.executiveSummary}\n## Strategic Implications\n- ${parsed.strategicInsights.join('\n- ')}\n## Challenges & Opportunities\n### Challenges\n- ${parsed.challengesAndOpportunities.challenges.join('\n- ')}\n### Opportunities\n- ${parsed.challengesAndOpportunities.opportunities.join('\n- ')}\n## Key Developments & Trends\n- ${parsed.keyDevelopmentsAndTrends.join('\n- ')}\n## Long Term Implications\n- ${parsed.longTermImplications.join('\n- ')}\n## Goals for Next Week\n- ${parsed.goalsForNextWeek.join('\n- ')}`
+  
+  const aiContent = response.choices[0].message.content
+  if (!validateMarkdownContent(aiContent)) {
+    console.error('Invalid markdown content received from AI')
+    return new Response('Invalid content in AI response', { status: 500 })
+  }
+  
+  const responseContent = `# Weekly Summary for ${body.weekStartDate} - ${body.weekEndDate}\n${aiContent.trim()}`
   const filename = `${process.env.WEEKLY_SUMMARY_NAME} ${dayjs().format('YYYY-MM-DD')}${process.env.NODE_ENV === 'development' ? `-DEV` : ''}.md`
 
   await createOrUpdateFile({
