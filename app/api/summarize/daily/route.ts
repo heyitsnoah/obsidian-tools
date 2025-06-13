@@ -120,8 +120,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const body: RouteMessageMap['/api/summarize/daily'] =
-    await verifyUpstashSignature(req)
+  const body = await verifyUpstashSignature(req) as RouteMessageMap['/api/summarize/daily']
   console.log('/api/summarize/daily')
 
   const urlBodies: null | UrlBodies = await redis.hgetall(body.urlsKey)

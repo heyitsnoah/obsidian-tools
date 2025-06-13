@@ -14,7 +14,7 @@ const r = new Receiver({
   currentSigningKey: process.env.QSTASH_CURRENT_SIGNING_KEY!,
   nextSigningKey: process.env.QSTASH_NEXT_SIGNING_KEY!,
 })
-interface UpstashHeaders extends Record<string, string> {
+interface UpstashHeaders {
   'Authorization': string
   'Content-Encoding'?: string
   'Content-Type': string
@@ -66,7 +66,7 @@ export async function publishToUpstash<Route extends UpstashRoute>(
     console.log('Absolute Delay: ', secondsFromNow)
   }
 
-  const headers: UpstashHeaders = upstashHeaders
+  const headers: UpstashHeaders = { ...upstashHeaders }
   if (options?.delay) {
     headers['Upstash-Delay'] = `${options.delay}s`
     console.log('Delay: ', options.delay)
@@ -92,7 +92,7 @@ export async function publishToUpstash<Route extends UpstashRoute>(
 
   const response = await fetch(`${process.env.QSTASH_URL}${urlPath}`, {
     body: messageToSend,
-    headers,
+    headers: headers as Record<string, string>,
     method: 'POST',
   })
   if (response.ok) {

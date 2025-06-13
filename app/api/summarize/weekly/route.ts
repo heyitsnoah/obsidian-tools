@@ -96,8 +96,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const body: RouteMessageMap['/api/summarize/weekly'] =
-    await verifyUpstashSignature(req)
+  const body = await verifyUpstashSignature(req) as RouteMessageMap['/api/summarize/weekly']
   // Add your weekly summary logic here
   const dailySummaries = await getDailySummaries(
     process.env.GITHUB_USERNAME!,
