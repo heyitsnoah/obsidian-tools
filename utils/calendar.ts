@@ -21,10 +21,9 @@ export async function formatCalendarEvents(
 
   return events
     .filter(
-      (event): event is calendar_v3.Schema$Event =>
-        !!event &&
-        !!event.start &&
-        (!!event.start.date || !!event.start.dateTime),
+      (event) =>
+        event.start &&
+        (event.start.date || event.start.dateTime),
     )
     .map((event) => {
       const isAllDay = !!event.start?.date
@@ -75,7 +74,5 @@ export async function getDaysEvents(): Promise<calendar_v3.Schema$Event[]> {
     timeZone: calendarTimezone,
   })
 
-  return (
-    response.data.items?.filter((event) => event.status === 'confirmed') || []
-  )
+  return response.data.items?.filter((event) => event.status === 'confirmed') ?? []
 }

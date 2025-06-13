@@ -5,7 +5,7 @@ import { Client, Receiver } from '@upstash/qstash'
 import pako from 'pako'
 import getByteLength from 'string-byte-length'
 
-const gzip = async (input: string): Promise<Buffer> => {
+const gzip = (input: string): Buffer => {
   return Buffer.from(pako.gzip(input))
 }
 const client = new Client({ token: process.env.QSTASH_TOKEN! })
@@ -14,7 +14,7 @@ const r = new Receiver({
   currentSigningKey: process.env.QSTASH_CURRENT_SIGNING_KEY!,
   nextSigningKey: process.env.QSTASH_NEXT_SIGNING_KEY!,
 })
-interface UpstashHeaders {
+interface UpstashHeaders extends Record<string, string> {
   'Authorization': string
   'Content-Encoding'?: string
   'Content-Type': string
@@ -51,7 +51,7 @@ export async function publishToUpstash<Route extends UpstashRoute>(
   if (options?.queue) {
     const queue = client.queue({ queueName: options.queue })
     if (options.queueParallelism) {
-      queue.upsert({ parallelism: options.queueParallelism })
+      await queue.upsert({ parallelism: options.queueParallelism })
     }
     await queue.enqueueJSON({
       body: message,
@@ -86,7 +86,7 @@ export async function publishToUpstash<Route extends UpstashRoute>(
     console.log('Message too large, compressing...')
     headers['Content-Type'] = 'application/octet-stream'
     headers['Content-Encoding'] = 'gzip'
-    messageToSend = await gzip(messageToSend)
+    messageToSend = gzip(messageToSend)
   }
   console.log(`${process.env.QSTASH_URL}${urlPath}`)
 
@@ -97,7 +97,7 @@ export async function publishToUpstash<Route extends UpstashRoute>(
   })
   if (response.ok) {
     console.log('Successfully published to Upstash')
-    return response.json()
+    return response.json() as Promise<unknown>
   }
   console.log('Error publishing to Upstash')
   console.log('Status: ', response.status)
@@ -109,9 +109,8 @@ export async function publishToUpstash<Route extends UpstashRoute>(
 export async function verifyUpstashSignature(req: NextRequest) {
   const body = await req.text()
   const signature = req.headers.get('Upstash-Signature') ?? ''
-  let isValid = false
   try {
-    isValid = await r.verify({ body, signature })
+    const isValid = await r.verify({ body, signature })
     if (!isValid) {
       console.log('Invalid signature')
       throw new Error('Invalid signature')
@@ -120,5 +119,5 @@ export async function verifyUpstashSignature(req: NextRequest) {
     console.log('Caught Error: ', err)
     throw new Error('Invalid signature')
   }
-  return JSON.parse(body)
+  return JSON.parse(body) as unknown
 }

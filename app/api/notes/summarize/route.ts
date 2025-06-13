@@ -10,8 +10,7 @@ export const maxDuration = 300
 
 export async function POST(req: NextRequest) {
   console.log('POST /api/notes/summarize')
-  const body: RouteMessageMap['/api/notes/summarize'] =
-    await verifyUpstashSignature(req)
+  const body = await verifyUpstashSignature(req) as RouteMessageMap['/api/notes/summarize']
   const response = await openai.chat.completions.create({
     messages: [
       {
@@ -32,7 +31,7 @@ export async function POST(req: NextRequest) {
   //       },
   //     ],
   //   })
-  if (!response || !response.choices[0].message.content) {
+  if (!response.choices[0]?.message?.content) {
     return new Response('No content found in response', { status: 500 })
   }
   //   const responseContent = (response.content[0] as TextBlock).text

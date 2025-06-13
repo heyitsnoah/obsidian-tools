@@ -46,13 +46,12 @@ Do not include any explanation or additional text outside of this JSON object.`,
         model: 'gpt-4o',
         response_format: { type: 'json_object' },
       })
-      if (!response) {
+      if (!response.choices[0]?.message?.content) {
         console.error(`Failed to summarize URL: ${url}`)
         throw new Error('Failed to summarize URL')
       }
-      const urlSummary = urlResponse.parse(
-        JSON.parse(response.choices[0].message.content ?? ''),
-      )
+      const content = response.choices[0].message.content
+      const urlSummary = urlResponse.parse(JSON.parse(content))
       if (!urlSummary.skipUrl) {
         await redis.hset(urlBodiesKey, {
           [url.trim()]: {
@@ -63,7 +62,7 @@ Do not include any explanation or additional text outside of this JSON object.`,
         await redis.expire(urlBodiesKey, 86400) // Set TTL for 24 hours
       }
     }
-  } catch (error) {
+  } catch (_error) {
     // Handle failed scrape attempt
     console.error(`Failed to scrape URL: ${url}`)
     // URL is already removed from the list by lpop, no need to handle further

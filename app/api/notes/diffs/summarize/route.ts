@@ -10,8 +10,7 @@ import { verifyUpstashSignature } from '@/utils/upstash'
 export async function POST(req: NextRequest) {
   console.log('/api/notes/diffs/summarize')
 
-  const body: RouteMessageMap['/api/notes/diffs/summarize'] =
-    await verifyUpstashSignature(req)
+  const body = await verifyUpstashSignature(req) as RouteMessageMap['/api/notes/diffs/summarize']
   const response = await anthropic.messages.create({
     max_tokens: 1000,
     messages: [
@@ -20,7 +19,7 @@ export async function POST(req: NextRequest) {
 
     model: 'claude-sonnet-4-20250514',
   })
-  if (!response) {
+  if (!response.content[0]) {
     return new Response('No content found in response', { status: 500 })
   }
   const responseContent = (response.content[0] as TextBlock).text
