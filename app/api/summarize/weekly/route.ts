@@ -96,8 +96,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const body: RouteMessageMap['/api/summarize/weekly'] =
-    await verifyUpstashSignature(req)
+  const body = await verifyUpstashSignature(req) as RouteMessageMap['/api/summarize/weekly']
   // Add your weekly summary logic here
   const dailySummaries = await getDailySummaries(
     process.env.GITHUB_USERNAME!,
@@ -118,6 +117,9 @@ export async function POST(req: NextRequest) {
     ],
     model: 'claude-3-5-sonnet-20240620',
   })
+  if (!response.content[0]) {
+    return new Response('No content found in response', { status: 500 })
+  }
   const responseText = (response.content[0] as TextBlock).text
   const parsed = await (async () => {
     try {

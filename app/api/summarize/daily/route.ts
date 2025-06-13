@@ -120,8 +120,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const body: RouteMessageMap['/api/summarize/daily'] =
-    await verifyUpstashSignature(req)
+  const body = await verifyUpstashSignature(req) as RouteMessageMap['/api/summarize/daily']
   console.log('/api/summarize/daily')
 
   const urlBodies: null | UrlBodies = await redis.hgetall(body.urlsKey)
@@ -131,7 +130,7 @@ export async function POST(req: NextRequest) {
   let notesArray
   if (notes && Object.keys(notes).length > 0) {
     notesArray = Object.entries(notes).map(([filename, note]) => ({
-      summary: note ?? '',
+      summary: note,
       title: filename,
     }))
   } else {
@@ -140,8 +139,8 @@ export async function POST(req: NextRequest) {
   let urlsArray
   if (urlBodies) {
     urlsArray = Object.entries(urlBodies).map(([url, content]) => ({
-      summary: `${url}: ${content.summary ?? ''}`,
-      title: content.title ?? '',
+      summary: `${url}: ${content.summary || ''}`,
+      title: content.title || '',
     }))
   }
 
@@ -150,8 +149,8 @@ export async function POST(req: NextRequest) {
     messages: [
       {
         content: getDailySummarySystemPrompt({
-          notes: notesArray ?? null,
-          urls: urlsArray ?? null,
+          notes: notesArray || null,
+          urls: urlsArray || null,
         }),
         role: 'user',
       },
@@ -159,7 +158,7 @@ export async function POST(req: NextRequest) {
     model: 'claude-3-5-sonnet-20240620',
   })
 
-  if (!response) {
+  if (!response.content[0]) {
     return new Response('No content found in response', { status: 500 })
   }
   const responseString = (response.content[0] as TextBlock).text
@@ -179,21 +178,20 @@ export async function POST(req: NextRequest) {
   }
   let responseContent = `# Daily Summary for ${dayjs(body.date).format('MMMM D, YYYY')}\n${eventsSection ? `## Calendar\n${eventsSection}` : ''}## Overall Summary\n${parsed.overallSummary}\n## Interesting Ideas\n- ${parsed.interestingIdeas.join('\n- ')}\n## Common Themes\n${parsed.commonThemes.join('\n- ')}\n## Questions for Exploration\n- ${parsed.questionsForExploration.join('\n- ')}\n## Possible Next Steps\n- ${parsed.nextSteps.join('\n- ')}`
 
-  if (notes) {
-    const insertNotes = (
-      responseContent: string,
-      notes: RedisNotes,
-    ): string => {
-      const notesList = Object.entries(notes)
-        .map(([title, summary]) => {
-          return `### [[${title.replace('.md', '')}]]\n${summary.replaceAll('<summary>', '').replaceAll('</summary>', '').trim()}`
-        })
-        .join('\n')
+  // notes is guaranteed to exist since we checked above
+  const insertNotes = (
+    responseContent: string,
+    notes: RedisNotes,
+  ): string => {
+    const notesList = Object.entries(notes)
+      .map(([title, summary]) => {
+        return `### [[${title.replace('.md', '')}]]\n${summary.replaceAll('<summary>', '').replaceAll('</summary>', '').trim()}`
+      })
+      .join('\n')
 
-      return `${responseContent}\n---\n## Notes\n${notesList}`
-    }
-    responseContent = insertNotes(responseContent, notes)
+    return `${responseContent}\n---\n## Notes\n${notesList}`
   }
+  responseContent = insertNotes(responseContent, notes)
   if (urlBodies) {
     const insertUrls = (
       responseContent: string,
@@ -201,11 +199,8 @@ export async function POST(req: NextRequest) {
     ): string => {
       const urlsList = Object.entries(urlBodies)
         .map(([url, content]) => {
-          if (content) {
-            const { summary, title } = content
-            return `- [${title}](${url})${summary ? `: ${summary}` : ''}`
-          }
-          return ''
+          const { summary, title } = content
+          return `- [${title}](${url})${summary ? `: ${summary}` : ''}`
         })
         .join('\n')
 
