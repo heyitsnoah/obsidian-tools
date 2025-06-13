@@ -5,8 +5,8 @@ import { redis } from './redis'
 import { scrapeUrl } from './scrape'
 
 const urlResponse = z.object({
-  summary: z.string(),
   skipUrl: z.boolean(),
+  summary: z.string(),
 })
 
 export async function processUrl(url: string, urlBodiesKey: string) {
@@ -14,17 +14,15 @@ export async function processUrl(url: string, urlBodiesKey: string) {
     const body = await scrapeUrl(url) // Replace with your scraping function
     if (body?.body) {
       const response = await openai.chat.completions.create({
-        model: 'gpt-4o',
         messages: [
           {
-            role: 'user',
             content: `You are tasked with summarizing the content of a website based on its title and body. Your goal is to create a concise yet informative summary that captures the main points of the content.
 
 Here is the content to summarize:
 
-<title>${body?.title}</title>
+<title>${body.title}</title>
 
-<body>${body?.body}</body>
+<body>${body.body}</body>
 
 First, determine if this URL should be skipped. Skip the URL if it's a sign-in page, an authentication page, or any page that doesn't contain substantial content of interest. For example, an Airtable sign-in page should be skipped.
 
@@ -42,8 +40,10 @@ Provide your response as a JSON object with the following structure:
 }
 
 Do not include any explanation or additional text outside of this JSON object.`,
+            role: 'user',
           },
         ],
+        model: 'gpt-4o',
         response_format: { type: 'json_object' },
       })
       if (!response) {
@@ -55,7 +55,7 @@ Do not include any explanation or additional text outside of this JSON object.`,
       )
       if (!urlSummary.skipUrl) {
         await redis.hset(urlBodiesKey, {
-          [url.trim() as string]: {
+          [url.trim()]: {
             ...body,
             summary: urlSummary.summary.trim(),
           },

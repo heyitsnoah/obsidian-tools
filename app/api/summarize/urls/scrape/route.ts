@@ -1,6 +1,6 @@
-import { NextRequest } from 'next/server'
+import type { RouteMessageMap } from '@/types/upstash'
+import type { NextRequest } from 'next/server'
 
-import { RouteMessageMap } from '@/types/upstash'
 import { verifyUpstashSignature } from '@/utils/upstash'
 import { processUrl } from '@/utils/urls'
 

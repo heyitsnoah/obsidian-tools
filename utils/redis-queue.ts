@@ -2,16 +2,16 @@
 export type QueueItem<T> = T
 
 // Generic type for the processed result
-export type ProcessedResult<R> = {
-  result: R | null
+export interface ProcessedResult<R> {
+  result: null | R
   skipItem: boolean
 }
 
-export type QueueKeys = {
-  queueKey: string
-  notesKey: string
-  urlsKey: string
+export interface QueueKeys {
   date: string
+  notesKey: string
+  queueKey: string
+  urlsKey: string
 }
 
 export function getQueueKeys(queueName: string): QueueKeys {
@@ -19,5 +19,5 @@ export function getQueueKeys(queueName: string): QueueKeys {
   const queueKey = `${queueName}_queue_${date}`
   const notesKey = `${queueName}_notes_${date}`
   const urlsKey = `${queueName}_urls_${date}`
-  return { queueKey, notesKey, urlsKey, date }
+  return { date, notesKey, queueKey, urlsKey }
 }

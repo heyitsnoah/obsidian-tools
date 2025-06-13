@@ -1,12 +1,5 @@
 {
-  "crons": [
-    {
-      "path": "/api/summarize/daily",
-      "schedule": "0 23 * * *"
-    },
-    {
-      "path": "/api/summarize/weekly",
-      "schedule": "0 * * * *"
-    }
-  ]
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "pnpm build:vercel",
+  "framework": "nextjs"
 }

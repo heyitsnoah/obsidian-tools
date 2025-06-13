@@ -1,8 +1,8 @@
-import { TextBlock } from '@anthropic-ai/sdk/resources/messages.mjs'
-import { NextRequest } from 'next/server'
+import type { RouteMessageMap } from '@/types/upstash'
+import type { TextBlock } from '@anthropic-ai/sdk/resources/messages.mjs'
+import type { NextRequest } from 'next/server'
 
 import { getDiffSummarizationPrompt } from '@/prompts/notes/note-summary-user'
-import { RouteMessageMap } from '@/types/upstash'
 import { anthropic } from '@/utils/ai'
 import { redis } from '@/utils/redis'
 import { verifyUpstashSignature } from '@/utils/upstash'
@@ -14,11 +14,11 @@ export async function POST(req: NextRequest) {
     await verifyUpstashSignature(req)
   const response = await anthropic.messages.create({
     max_tokens: 1000,
-    model: 'claude-sonnet-4-20250514',
-
     messages: [
-      { role: 'user', content: getDiffSummarizationPrompt(body.diff.diff) },
+      { content: getDiffSummarizationPrompt(body.diff.diff), role: 'user' },
     ],
+
+    model: 'claude-sonnet-4-20250514',
   })
   if (!response) {
     return new Response('No content found in response', { status: 500 })

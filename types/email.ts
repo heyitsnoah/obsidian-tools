@@ -1,5 +1,5 @@
-export type EmailMessageRawBody = {
+export interface EmailMessageRawBody {
+  HtmlBody: string
   Subject: string
   TextBody: string
-  HtmlBody: string
 }

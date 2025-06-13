@@ -1,13 +1,13 @@
-type Metadata = {
-  key: string
-  value: string
-}
+export type UrlBodies = Record<string, UrlSummary>
 
-export type UrlSummary = {
-  title: string
+export interface UrlSummary {
   body: string
   metadata: Metadata[]
   summary?: string
+  title: string
 }
 
-export type UrlBodies = Record<string, UrlSummary>
+interface Metadata {
+  key: string
+  value: string
+}

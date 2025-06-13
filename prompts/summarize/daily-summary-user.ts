@@ -1,28 +1,28 @@
 import { z } from 'zod'
 
 export const AiSummaryFormat = z.object({
-  overallSummary: z.string(),
   commonThemes: z.array(z.string()),
   interestingIdeas: z.array(z.string()),
-  questionsForExploration: z.array(z.string()),
   nextSteps: z.array(z.string()),
+  overallSummary: z.string(),
+  questionsForExploration: z.array(z.string()),
 })
 
-type InputStructure = { title: string; summary: string }
+interface InputStructure { summary: string; title: string; }
 export function getDailySummarySystemPrompt({
+  additionalContext,
   notes,
   urls,
-  additionalContext,
 }: {
+  additionalContext?: string
   notes: InputStructure[] | null
   urls: InputStructure[] | null
-  additionalContext?: string
 }) {
   const currentDate = new Date().toLocaleDateString('en-US', {
+    day: 'numeric',
+    month: 'long',
     weekday: 'long',
     year: 'numeric',
-    month: 'long',
-    day: 'numeric',
   })
 
   const formatInputs = (inputs: InputStructure[]) => {

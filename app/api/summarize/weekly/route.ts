@@ -1,17 +1,18 @@
-import { TextBlock } from '@anthropic-ai/sdk/resources/messages.mjs'
-import dayjs from 'dayjs'
-import timezonePlugin from 'dayjs/plugin/timezone'
-import utc from 'dayjs/plugin/utc'
-import { NextRequest } from 'next/server'
+import type { RouteMessageMap } from '@/types/upstash'
+import type { TextBlock } from '@anthropic-ai/sdk/resources/messages.mjs'
+import type { NextRequest } from 'next/server'
 
 import {
   getWeeklySummarySystemPrompt,
   WeeklySummaryFormat,
 } from '@/prompts/summarize/weekly-summary-user'
-import { RouteMessageMap } from '@/types/upstash'
 import { anthropic, extractJson } from '@/utils/ai'
 import { createOrUpdateFile, getDailySummaries } from '@/utils/github'
 import { publishToUpstash, verifyUpstashSignature } from '@/utils/upstash'
+import dayjs from 'dayjs'
+import timezonePlugin from 'dayjs/plugin/timezone'
+import utc from 'dayjs/plugin/utc'
+
 export const dynamic = 'force-dynamic'
 export const maxDuration = 300
 dayjs.extend(utc)
@@ -28,52 +29,6 @@ const dayToNumber = (day: string): number => {
     'saturday',
   ]
   return days.indexOf(day.toLowerCase())
-}
-
-export async function POST(req: NextRequest) {
-  const body: RouteMessageMap['/api/summarize/weekly'] =
-    await verifyUpstashSignature(req)
-  // Add your weekly summary logic here
-  const dailySummaries = await getDailySummaries(
-    process.env.GITHUB_USERNAME!,
-    process.env.GITHUB_REPO!,
-  )
-
-  const response = await anthropic.messages.create({
-    max_tokens: 4000,
-    model: 'claude-3-5-sonnet-20240620',
-    messages: [
-      {
-        role: 'user',
-        content: getWeeklySummarySystemPrompt({
-          dailySummaries,
-          weekEndDate: body.weekEndDate,
-          weekStartDate: body.weekStartDate,
-        }),
-      },
-    ],
-  })
-  const responseText = (response.content[0] as TextBlock).text
-  const parsed = await (async () => {
-    try {
-      return WeeklySummaryFormat.parse(JSON.parse(responseText))
-    } catch (error) {
-      console.error('Error parsing response:', error)
-      console.log('Response:', responseText)
-      return await extractJson(responseText, WeeklySummaryFormat)
-    }
-  })()
-  const responseContent = `# Weekly Summary for ${body.weekStartDate} - ${body.weekEndDate}\n## Overall Summary\n${parsed.executiveSummary}\n## Strategic Implications\n- ${parsed.strategicInsights.join('\n- ')}\n## Challenges & Opportunities\n### Challenges\n- ${parsed.challengesAndOpportunities.challenges.join('\n- ')}\n### Opportunities\n- ${parsed.challengesAndOpportunities.opportunities.join('\n- ')}\n## Key Developments & Trends\n- ${parsed.keyDevelopmentsAndTrends.join('\n- ')}\n## Long Term Implications\n- ${parsed.longTermImplications.join('\n- ')}\n## Goals for Next Week\n- ${parsed.goalsForNextWeek.join('\n- ')}`
-  const filename = `${process.env.WEEKLY_SUMMARY_NAME} ${dayjs().format('YYYY-MM-DD')}${process.env.NODE_ENV === 'development' ? `-DEV` : ''}.md`
-
-  await createOrUpdateFile({
-    filename,
-    content: responseContent,
-    path: process.env.WEEKLY_SUMMARY_FOLDER,
-    inbox: true,
-  })
-  console.log('Weekly summary written to GitHub: ', filename)
-  return new Response('ok', { status: 200 })
 }
 
 export async function GET(req: NextRequest) {
@@ -138,4 +93,50 @@ export async function GET(req: NextRequest) {
     weekStartDate,
   })
   return new Response('Weekly summary executed', { status: 200 })
+}
+
+export async function POST(req: NextRequest) {
+  const body: RouteMessageMap['/api/summarize/weekly'] =
+    await verifyUpstashSignature(req)
+  // Add your weekly summary logic here
+  const dailySummaries = await getDailySummaries(
+    process.env.GITHUB_USERNAME!,
+    process.env.GITHUB_REPO!,
+  )
+
+  const response = await anthropic.messages.create({
+    max_tokens: 4000,
+    messages: [
+      {
+        content: getWeeklySummarySystemPrompt({
+          dailySummaries,
+          weekEndDate: body.weekEndDate,
+          weekStartDate: body.weekStartDate,
+        }),
+        role: 'user',
+      },
+    ],
+    model: 'claude-3-5-sonnet-20240620',
+  })
+  const responseText = (response.content[0] as TextBlock).text
+  const parsed = await (async () => {
+    try {
+      return WeeklySummaryFormat.parse(JSON.parse(responseText))
+    } catch (error) {
+      console.error('Error parsing response:', error)
+      console.log('Response:', responseText)
+      return extractJson(responseText, WeeklySummaryFormat)
+    }
+  })()
+  const responseContent = `# Weekly Summary for ${body.weekStartDate} - ${body.weekEndDate}\n## Overall Summary\n${parsed.executiveSummary}\n## Strategic Implications\n- ${parsed.strategicInsights.join('\n- ')}\n## Challenges & Opportunities\n### Challenges\n- ${parsed.challengesAndOpportunities.challenges.join('\n- ')}\n### Opportunities\n- ${parsed.challengesAndOpportunities.opportunities.join('\n- ')}\n## Key Developments & Trends\n- ${parsed.keyDevelopmentsAndTrends.join('\n- ')}\n## Long Term Implications\n- ${parsed.longTermImplications.join('\n- ')}\n## Goals for Next Week\n- ${parsed.goalsForNextWeek.join('\n- ')}`
+  const filename = `${process.env.WEEKLY_SUMMARY_NAME} ${dayjs().format('YYYY-MM-DD')}${process.env.NODE_ENV === 'development' ? `-DEV` : ''}.md`
+
+  await createOrUpdateFile({
+    content: responseContent,
+    filename,
+    inbox: true,
+    path: process.env.WEEKLY_SUMMARY_FOLDER,
+  })
+  console.log('Weekly summary written to GitHub: ', filename)
+  return new Response('ok', { status: 200 })
 }

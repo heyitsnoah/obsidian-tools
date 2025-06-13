@@ -1,10 +1,11 @@
-import { NextRequest } from 'next/server'
+import type { RouteMessageMap } from '@/types/upstash'
+import type { NextRequest } from 'next/server'
 
 import { getNoteSummarizationPrompt } from '@/prompts/notes/note-summary-user'
-import { RouteMessageMap } from '@/types/upstash'
 import { openai } from '@/utils/ai'
 import { redis } from '@/utils/redis'
 import { verifyUpstashSignature } from '@/utils/upstash'
+
 export const maxDuration = 300
 
 export async function POST(req: NextRequest) {
@@ -12,13 +13,13 @@ export async function POST(req: NextRequest) {
   const body: RouteMessageMap['/api/notes/summarize'] =
     await verifyUpstashSignature(req)
   const response = await openai.chat.completions.create({
-    model: 'gpt-4o-2024-08-06',
     messages: [
       {
-        role: 'user',
         content: getNoteSummarizationPrompt(body.note.filename, body.note.body),
+        role: 'user',
       },
     ],
+    model: 'gpt-4o-2024-08-06',
   })
   //   const response = await anthropic.messages.create({
   //     max_tokens: 1000,

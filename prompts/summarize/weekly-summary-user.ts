@@ -1,29 +1,29 @@
+import type { RecentFile } from '@/types/files'
+
 import { z } from 'zod'
 
-import { RecentFile } from '@/types/files'
-
 export const WeeklySummaryFormat = z.object({
-  executiveSummary: z.string(),
-  keyDevelopmentsAndTrends: z.array(z.string()),
-  strategicInsights: z.array(z.string()),
   challengesAndOpportunities: z.object({
     challenges: z.array(z.string()),
     opportunities: z.array(z.string()),
   }),
+  executiveSummary: z.string(),
   goalsForNextWeek: z.array(z.string()),
+  keyDevelopmentsAndTrends: z.array(z.string()),
   longTermImplications: z.array(z.string()),
+  strategicInsights: z.array(z.string()),
 })
 
 export function getWeeklySummarySystemPrompt({
-  dailySummaries,
-  weekStartDate,
-  weekEndDate,
   additionalContext,
+  dailySummaries,
+  weekEndDate,
+  weekStartDate,
 }: {
-  dailySummaries: RecentFile[]
-  weekStartDate: string
-  weekEndDate: string
   additionalContext?: string
+  dailySummaries: RecentFile[]
+  weekEndDate: string
+  weekStartDate: string
 }) {
   const formatDailySummaries = (summaries: RecentFile[]) => {
     return summaries

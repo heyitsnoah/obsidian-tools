@@ -1,7 +1,8 @@
+import type { z, ZodType } from 'zod'
+
 import { generateSchema } from '@anatine/zod-openapi'
 import Anthropic from '@anthropic-ai/sdk'
 import OpenAI from 'openai'
-import { z, ZodType } from 'zod'
 
 export const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -16,17 +17,17 @@ export async function extractJson<T extends ZodType>(
   zodType: T,
 ): Promise<z.infer<T>> {
   const response = await openai.chat.completions.create({
-    model: 'gpt-4o-mini',
     messages: [
       {
-        role: 'system',
         content: `Please extract the JSON object from the user's text. Use the following OpenAPI schema: ${generateSchema(zodType)}`,
+        role: 'system',
       },
       {
-        role: 'user',
         content: string,
+        role: 'user',
       },
     ],
+    model: 'gpt-4o-mini',
   })
 
   if (!response || !response.choices[0].message.content) {

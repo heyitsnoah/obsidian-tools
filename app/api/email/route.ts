@@ -1,8 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server'
+import type { EmailMessageRawBody } from '@/types/email'
+
+import { createOrUpdateFile, sanitizeFilename } from '@/utils/github'
+import { type NextRequest, NextResponse } from 'next/server'
 import TurndownService from 'turndown'
 
-import { EmailMessageRawBody } from '@/types/email'
-import { createOrUpdateFile, sanitizeFilename } from '@/utils/github'
 export async function POST(req: NextRequest) {
   const searchParams = new URLSearchParams(req.url.split('?')[1])
 
@@ -28,22 +29,22 @@ export async function POST(req: NextRequest) {
     const filename = `${sanitizeFilename(subject)}.md`
 
     const fileId = await createOrUpdateFile({
-      path: `/Clippings`,
-      filename,
       content: markdown,
+      filename,
+      path: `/Clippings`,
     })
 
     return NextResponse.json(
-      { status: 'File created/updated successfully', fileId },
+      { fileId, status: 'File created/updated successfully' },
       { status: 200 },
     )
   } catch (error) {
     console.error('Error in POST handler:', error)
     return NextResponse.json(
       {
-        status: 'Error',
-        message: 'Failed to create or update file',
         details: `GitHub Username: ${process.env.GITHUB_USERNAME}, Repo: ${process.env.GITHUB_REPO}, Path: ${process.env.OBSIDIAN_INBOX_PATH}`,
+        message: 'Failed to create or update file',
+        status: 'Error',
       },
       { status: 500 },
     )
