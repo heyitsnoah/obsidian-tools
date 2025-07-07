@@ -1,12 +1,16 @@
 // @ts-check
-import { configs } from '@alephic-ai/eslint-config'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+import { configs } from './vendor/@alephic-ai/eslint-config/dist/index.js'
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
-/** @type {import('@typescript-eslint/utils/ts-eslint').FlatConfig.Config[]} */
 export default [
+  {
+    ignores: ['vendor/**'],
+    name: 'obsidian-tools/ignore-vendor',
+  },
   ...configs({ rootDir: __dirname }),
   {
     files: ['src/components/ui/*.tsx'],

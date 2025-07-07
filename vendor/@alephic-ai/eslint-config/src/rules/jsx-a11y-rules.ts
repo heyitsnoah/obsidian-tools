@@ -1,0 +1,48 @@
+import { registry } from '../rule-registry.js'
+
+export const jsxA11yRules = registry.registerRules({
+  'jsx-a11y/alt-text': [
+    'error',
+    {
+      elements: ['img'],
+      img: ['Image'],
+    },
+  ],
+  'jsx-a11y/anchor-has-content': 'error',
+  'jsx-a11y/aria-props': 'error',
+  'jsx-a11y/aria-proptypes': 'error',
+  'jsx-a11y/aria-unsupported-elements': 'error',
+  'jsx-a11y/no-redundant-roles': 'error',
+  'jsx-a11y/role-has-required-aria-props': 'error',
+  'jsx-a11y/role-supports-aria-props': 'error',
+  'jsx-a11y/tabindex-no-positive': 'error',
+
+  // ignored rules
+  'jsx-a11y/anchor-ambiguous-text': 'off',
+  'jsx-a11y/anchor-is-valid': 'off',
+  'jsx-a11y/aria-activedescendant-has-tabindex': 'off',
+  'jsx-a11y/aria-role': 'off',
+  'jsx-a11y/autocomplete-valid': 'off',
+  'jsx-a11y/click-events-have-key-events': 'off',
+  'jsx-a11y/control-has-associated-label': 'off',
+  'jsx-a11y/heading-has-content': 'off',
+  'jsx-a11y/html-has-lang': 'off',
+  'jsx-a11y/iframe-has-title': 'off',
+  'jsx-a11y/img-redundant-alt': 'off',
+  'jsx-a11y/interactive-supports-focus': 'off',
+  'jsx-a11y/label-has-associated-control': 'off',
+  'jsx-a11y/lang': 'off',
+  'jsx-a11y/media-has-caption': 'off',
+  'jsx-a11y/mouse-events-have-key-events': 'off',
+  'jsx-a11y/no-access-key': 'off',
+  'jsx-a11y/no-aria-hidden-on-focusable': 'off',
+  'jsx-a11y/no-autofocus': 'off',
+  'jsx-a11y/no-distracting-elements': 'off',
+  'jsx-a11y/no-interactive-element-to-noninteractive-role': 'off',
+  'jsx-a11y/no-noninteractive-element-interactions': 'off',
+  'jsx-a11y/no-noninteractive-element-to-interactive-role': 'off',
+  'jsx-a11y/no-noninteractive-tabindex': 'off',
+  'jsx-a11y/no-static-element-interactions': 'off',
+  'jsx-a11y/prefer-tag-over-role': 'off',
+  'jsx-a11y/scope': 'off',
+})

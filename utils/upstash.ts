@@ -43,7 +43,7 @@ export async function publishToUpstash<Route extends UpstashRoute>(
     queue?: string
     queueParallelism?: number
     upstashMethod?: 'DELETE' | 'GET' | 'PATCH' | 'POST' | 'PUT'
-  }
+  },
 ) {
   console.log('Publishing to Upstash')
   console.log('URL: ', url)
@@ -92,7 +92,7 @@ export async function publishToUpstash<Route extends UpstashRoute>(
 
   const response = await fetch(`${process.env.QSTASH_URL}${urlPath}`, {
     body: messageToSend,
-    headers: headers as Record<string, string>,
+    headers: headers as unknown as Record<string, string>,
     method: 'POST',
   })
   if (response.ok) {

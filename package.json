@@ -3,13 +3,14 @@
   "version": "0.1.0",
   "private": true,
   "license": "SSPL-1.0",
+  "type": "module",
   "scripts": {
-    "dev": "next dev",
     "build": "next build",
-    "start": "next start",
+    "dev": "next dev",
     "lint": "concurrently --raw 'next lint --fix' 'tsc --noEmit'",
-    "tsc": "tsc --noEmit",
-    "test": "vitest"
+    "start": "next start",
+    "test": "vitest",
+    "tsc": "tsc --noEmit"
   },
   "prettier": "@alephic-ai/prettier-config",
   "dependencies": {
@@ -46,7 +47,7 @@
     "zod": "^3"
   },
   "devDependencies": {
-    "@alephic-ai/eslint-config": "0.4.4",
+    "@alephic-ai/eslint-config": "file:vendor/@alephic-ai/eslint-config",
     "@alephic-ai/prettier-config": "0.0.5",
     "@alephic-ai/typescript-config": "0.0.3",
     "@commander-js/extra-typings": "^13",
@@ -63,6 +64,7 @@
     "commander": "^13",
     "concurrently": "^9",
     "drizzle-kit": "0.31.1",
+    "globals": "^16.2.0",
     "jsdom": "^26",
     "pg": "^8",
     "postcss": "^8",

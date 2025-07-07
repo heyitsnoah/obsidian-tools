@@ -1,0 +1,2 @@
+export declare const reactHooksRules: Record<"react-hooks/exhaustive-deps" | "react-hooks/rules-of-hooks", [import("eslint").Linter.RuleSeverity, ...any[]]>;
+//# sourceMappingURL=react-hooks-rules.d.ts.map

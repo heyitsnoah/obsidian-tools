@@ -103,8 +103,8 @@ importers:
         version: 3.25.61
     devDependencies:
       '@alephic-ai/eslint-config':
-        specifier: 0.4.4
-        version: 0.4.4(jiti@2.4.2)(typescript@5.8.3)
+        specifier: file:vendor/@alephic-ai/eslint-config
+        version: file:vendor/@alephic-ai/eslint-config(jiti@2.4.2)(typescript@5.8.3)
       '@alephic-ai/prettier-config':
         specifier: 0.0.5
         version: 0.0.5
@@ -153,6 +153,9 @@ importers:
       drizzle-kit:
         specifier: 0.31.1
         version: 0.31.1
+      globals:
+        specifier: ^16.2.0
+        version: 16.2.0
       jsdom:
         specifier: ^26
         version: 26.1.0
@@ -183,8 +186,8 @@ importers:
 
 packages:
 
-  '@alephic-ai/eslint-config@0.4.4':
-    resolution: {integrity: sha512-oSC+vMrFZuN56DualgN3ATw9YEDlhUMCqzySbGh85z25jvx2YSb52p5vvv+YMXu7cUNh1HDkMVgiwAGrrkrcJg==, tarball: https://npm.pkg.github.com/download/@alephic-ai/eslint-config/0.4.4/86d68cd0286746bf466a828b6794d9ff94485e21}
+  '@alephic-ai/eslint-config@file:vendor/@alephic-ai/eslint-config':
+    resolution: {directory: vendor/@alephic-ai/eslint-config, type: directory}
 
   '@alephic-ai/prettier-config@0.0.5':
     resolution: {integrity: sha512-1se4J9Yzcx7jjyQlCmnDf9sXs9fH4aCDXaslr7JC5GDVbnVJfxVHyyUlPLOF0iBXAEAUBmFS/XSVRUVL4WcWkQ==, tarball: https://npm.pkg.github.com/download/@alephic-ai/prettier-config/0.0.5/67984f5591cc43063db4e55eb06dde084e19f086}
@@ -2328,6 +2331,10 @@ packages:
     resolution: {integrity: sha512-iInW14XItCXET01CQFqudPOWP2jYMl7T+QRQT+UNcR/iQncN/F0UNpgd76iFkBPgNQb4+X3LV9tLJYzwh+Gl3A==}
     engines: {node: '>=18'}
 
+  globals@16.2.0:
+    resolution: {integrity: sha512-O+7l9tPdHCU320IigZZPj5zmRCFG9xHmx9cU8FqU2Rp+JN714seHV+2S9+JslCpY4gJwU2vOGox0wzgae/MCEg==}
+    engines: {node: '>=18'}
+
   globalthis@1.0.4:
     resolution: {integrity: sha512-DpLKbNU4WylpxJykQujfCcwYWiV/Jhm50Goo0wrVILAv5jOr9d+H+UR3PhSCD2rCCEIg0uc+G+muBTwD54JhDQ==}
     engines: {node: '>= 0.4'}
@@ -3922,7 +3929,7 @@ packages:
 
 snapshots:
 
-  '@alephic-ai/eslint-config@0.4.4(jiti@2.4.2)(typescript@5.8.3)':
+  '@alephic-ai/eslint-config@file:vendor/@alephic-ai/eslint-config(jiti@2.4.2)(typescript@5.8.3)':
     dependencies:
       '@eslint/compat': 1.2.7(eslint@9.23.0(jiti@2.4.2))
       '@next/eslint-plugin-next': 15.2.3
@@ -6134,6 +6141,8 @@ snapshots:
   globals@14.0.0: {}
 
   globals@16.0.0: {}
+
+  globals@16.2.0: {}
 
   globalthis@1.0.4:
     dependencies:
