@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "declarationDir": "./types/",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "outDir": "./dist/",
+    "rootDir": "./src/",
+    "target": "ESNext",
+    "tsBuildInfoFile": "../../tmp/tsconfig.eslint-config.tsbuildinfo"
+  },
+  "extends": "@alephic-ai/typescript-config/tsconfig.composite.json",
+  "include": ["./src/"]
+}

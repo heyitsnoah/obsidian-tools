@@ -1,45 +1,23 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+# format:
+# - all paths **must** start with a slash
+# - directories **must** end with a slash
+# - files **must not** end with a slash
+# - subdirectory matching must be explicit for better compatibility (ex., `node_modules` does not match `packages/foo/node_modules`)
+# - there must only be one .gitignore in the root of the project
+# - exclude OS specific files globally (ex., `.DS_Store`)
 
-# dependencies
-/node_modules
-/.pnp
-.pnp.js
-.yarn/install-state.gz
-
-# testing
-/coverage
-
-# next.js
+/.env
 /.next/
-/out/
+/.vercel/
+/build/
+/dotenv/.env.keys
+/dotenv/.env*.local
+/next-env.d.ts
+/node_modules/
+/tmp/
+.tsbuildinfo
+tsconfig.tsbuildinfo
 
-# production
-/build
-
-# misc
-.DS_Store
-*.pem
-
-# debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# local env files
+# Vercel's CLI adds this unless defined exactly as below
 .env*.local
-
-# vercel
 .vercel
-
-# typescript
-*.tsbuildinfo
-next-env.d.ts
-
-# env
-.env
-
-# cloudflared
-.cloudflared
-
-# testing
-/app/test

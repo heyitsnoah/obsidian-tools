@@ -1,0 +1,2 @@
+export declare const checkFileRules: Record<"check-file/filename-blocklist" | "check-file/filename-naming-convention" | "check-file/folder-match-with-fex" | "check-file/folder-naming-convention" | "check-file/no-index", [import("eslint").Linter.RuleSeverity, ...any[]]>;
+//# sourceMappingURL=check-file-rules.d.ts.map

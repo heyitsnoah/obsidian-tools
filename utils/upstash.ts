@@ -1,11 +1,11 @@
+import type { RouteMessageMap, UpstashRoute } from '@/types/upstash'
+import type { NextRequest } from 'next/server'
+
 import { Client, Receiver } from '@upstash/qstash'
-import { NextRequest } from 'next/server'
 import pako from 'pako'
 import getByteLength from 'string-byte-length'
 
-import { RouteMessageMap, UpstashRoute } from '@/types/upstash'
-
-const gzip = async (input: string): Promise<Buffer> => {
+const gzip = (input: string): Buffer => {
   return Buffer.from(pako.gzip(input))
 }
 const client = new Client({ token: process.env.QSTASH_TOKEN! })
@@ -14,35 +14,18 @@ const r = new Receiver({
   currentSigningKey: process.env.QSTASH_CURRENT_SIGNING_KEY!,
   nextSigningKey: process.env.QSTASH_NEXT_SIGNING_KEY!,
 })
-type UpstashHeaders = {
-  'Content-Type': string
+interface UpstashHeaders {
   'Authorization': string
-  'Upstash-Delay'?: string
-  'Upstash-Not-Before'?: string
-  'Upstash-Method'?: string
   'Content-Encoding'?: string
+  'Content-Type': string
+  'Upstash-Delay'?: string
   'Upstash-Forward-Delay-Applied'?: string
+  'Upstash-Method'?: string
+  'Upstash-Not-Before'?: string
 }
 export const upstashHeaders: UpstashHeaders = {
   'Authorization': `Bearer ${process.env.QSTASH_TOKEN}`,
   'Content-Type': 'application/json',
-}
-
-export async function verifyUpstashSignature(req: NextRequest) {
-  const body = await req.text()
-  const signature = req.headers.get('Upstash-Signature') ?? ''
-  let isValid = false
-  try {
-    isValid = await r.verify({ body, signature })
-    if (!isValid) {
-      console.log('Invalid signature')
-      throw new Error('Invalid signature')
-    }
-  } catch (err) {
-    console.log('Caught Error: ', err)
-    throw new Error('Invalid signature')
-  }
-  return JSON.parse(body)
 }
 
 export async function getUpstashQueue(queueName: string) {
@@ -55,12 +38,12 @@ export async function publishToUpstash<Route extends UpstashRoute>(
   url: Route,
   message: RouteMessageMap[Route],
   options?: {
+    absoluteDelay?: string
+    delay?: number
     queue?: string
     queueParallelism?: number
-    delay?: number
-    absoluteDelay?: string
-    upstashMethod?: 'GET' | 'PUT' | 'POST' | 'DELETE' | 'PATCH'
-  }
+    upstashMethod?: 'DELETE' | 'GET' | 'PATCH' | 'POST' | 'PUT'
+  },
 ) {
   console.log('Publishing to Upstash')
   console.log('URL: ', url)
@@ -68,11 +51,11 @@ export async function publishToUpstash<Route extends UpstashRoute>(
   if (options?.queue) {
     const queue = client.queue({ queueName: options.queue })
     if (options.queueParallelism) {
-      queue.upsert({ parallelism: options.queueParallelism })
+      await queue.upsert({ parallelism: options.queueParallelism })
     }
     await queue.enqueueJSON({
-      url: urlPath,
       body: message,
+      url: urlPath,
     })
     return
   }
@@ -83,7 +66,7 @@ export async function publishToUpstash<Route extends UpstashRoute>(
     console.log('Absolute Delay: ', secondsFromNow)
   }
 
-  const headers: UpstashHeaders = upstashHeaders
+  const headers: UpstashHeaders = { ...upstashHeaders }
   if (options?.delay) {
     headers['Upstash-Delay'] = `${options.delay}s`
     console.log('Delay: ', options.delay)
@@ -95,7 +78,7 @@ export async function publishToUpstash<Route extends UpstashRoute>(
   if (options?.upstashMethod) {
     headers['Upstash-Method'] = options.upstashMethod
   }
-  let messageToSend: string | Buffer = JSON.stringify(message)
+  let messageToSend: Buffer | string = JSON.stringify(message)
   const size = getByteLength(messageToSend)
   console.log('Size: ', size)
 
@@ -103,22 +86,38 @@ export async function publishToUpstash<Route extends UpstashRoute>(
     console.log('Message too large, compressing...')
     headers['Content-Type'] = 'application/octet-stream'
     headers['Content-Encoding'] = 'gzip'
-    messageToSend = await gzip(messageToSend)
+    messageToSend = gzip(messageToSend)
   }
   console.log(`${process.env.QSTASH_URL}${urlPath}`)
 
   const response = await fetch(`${process.env.QSTASH_URL}${urlPath}`, {
-    method: 'POST',
-    headers,
     body: messageToSend,
+    headers: headers as unknown as Record<string, string>,
+    method: 'POST',
   })
   if (response.ok) {
     console.log('Successfully published to Upstash')
-    return await response.json()
+    return response.json() as Promise<unknown>
   }
   console.log('Error publishing to Upstash')
   console.log('Status: ', response.status)
   // console.log('Message: ', message)
   // console.log(await response.json())
   throw new Error('Error publishing to Upstash')
+}
+
+export async function verifyUpstashSignature(req: NextRequest) {
+  const body = await req.text()
+  const signature = req.headers.get('Upstash-Signature') ?? ''
+  try {
+    const isValid = await r.verify({ body, signature })
+    if (!isValid) {
+      console.log('Invalid signature')
+      throw new Error('Invalid signature')
+    }
+  } catch (err) {
+    console.log('Caught Error: ', err)
+    throw new Error('Invalid signature')
+  }
+  return JSON.parse(body) as unknown
 }

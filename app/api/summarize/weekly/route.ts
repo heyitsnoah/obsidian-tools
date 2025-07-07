@@ -1,17 +1,18 @@
-import dayjs from 'dayjs'
-import timezonePlugin from 'dayjs/plugin/timezone'
-import utc from 'dayjs/plugin/utc'
-import { NextRequest } from 'next/server'
+import type { RecentFile } from '@/types/files'
+import type { RouteMessageMap } from '@/types/upstash'
+import type { NextRequest } from 'next/server'
 
 import {
   getWeeklySummaryUserPrompt,
   WEEKLY_SUMMARY_SYSTEM_PROMPT,
 } from '@/prompts/summarize/weekly-summary-user'
-import { RecentFile } from '@/types/files'
-import { RouteMessageMap } from '@/types/upstash'
 import { O3_CONFIG, openai, validateMarkdownContent } from '@/utils/ai'
 import { createOrUpdateFile, getDailySummaries } from '@/utils/github'
 import { publishToUpstash, verifyUpstashSignature } from '@/utils/upstash'
+import dayjs from 'dayjs'
+import timezonePlugin from 'dayjs/plugin/timezone'
+import utc from 'dayjs/plugin/utc'
+
 export const dynamic = 'force-dynamic'
 export const maxDuration = 300
 dayjs.extend(utc)
@@ -28,63 +29,6 @@ const dayToNumber = (day: string): number => {
     'saturday',
   ]
   return days.indexOf(day.toLowerCase())
-}
-
-export async function POST(req: NextRequest) {
-  const body: RouteMessageMap['/api/summarize/weekly'] =
-    await verifyUpstashSignature(req)
-  // Add your weekly summary logic here
-  const dailySummaries = await getDailySummaries(
-    process.env.GITHUB_USERNAME!,
-    process.env.GITHUB_REPO!,
-  )
-
-  const formatDailySummaries = (summaries: RecentFile[]) =>
-    summaries
-      .map(
-        (summary) =>
-          `### ${summary.filename.replace('.md', '')}\n\n${summary.body}`,
-      )
-      .join('\n\n')
-
-  const summariesString = formatDailySummaries(dailySummaries)
-
-  const response = await openai.chat.completions.create({
-    ...O3_CONFIG,
-    messages: [
-      { role: 'system', content: WEEKLY_SUMMARY_SYSTEM_PROMPT },
-      {
-        role: 'user',
-        content: getWeeklySummaryUserPrompt({
-          startDate: body.weekStartDate,
-          endDate: body.weekEndDate,
-          summaries: summariesString,
-        }),
-      },
-    ],
-  })
-
-  if (!response.choices[0]?.message?.content) {
-    return new Response('No content found in response', { status: 500 })
-  }
-  
-  const aiContent = response.choices[0].message.content
-  if (!validateMarkdownContent(aiContent)) {
-    console.error('Invalid markdown content received from AI')
-    return new Response('Invalid content in AI response', { status: 500 })
-  }
-  
-  const responseContent = `# Weekly Summary for ${body.weekStartDate} - ${body.weekEndDate}\n${aiContent.trim()}`
-  const filename = `${process.env.WEEKLY_SUMMARY_NAME} ${dayjs().format('YYYY-MM-DD')}${process.env.NODE_ENV === 'development' ? `-DEV` : ''}.md`
-
-  await createOrUpdateFile({
-    filename,
-    content: responseContent,
-    path: process.env.WEEKLY_SUMMARY_FOLDER,
-    inbox: true,
-  })
-  console.log('Weekly summary written to GitHub: ', filename)
-  return new Response('ok', { status: 200 })
 }
 
 export async function GET(req: NextRequest) {
@@ -149,4 +93,60 @@ export async function GET(req: NextRequest) {
     weekStartDate,
   })
   return new Response('Weekly summary executed', { status: 200 })
+}
+
+export async function POST(req: NextRequest) {
+  const body = await verifyUpstashSignature(req) as RouteMessageMap['/api/summarize/weekly']
+  // Add your weekly summary logic here
+  const dailySummaries = await getDailySummaries(
+    process.env.GITHUB_USERNAME!,
+    process.env.GITHUB_REPO!,
+  )
+
+  const formatDailySummaries = (summaries: RecentFile[]) =>
+    summaries
+      .map(
+        (summary) =>
+          `### ${summary.filename.replace('.md', '')}\n\n${summary.body}`,
+      )
+      .join('\n\n')
+
+  const summariesString = formatDailySummaries(dailySummaries)
+
+  const response = await openai.chat.completions.create({
+    ...O3_CONFIG,
+    messages: [
+      { content: WEEKLY_SUMMARY_SYSTEM_PROMPT, role: 'system' },
+      {
+        content: getWeeklySummaryUserPrompt({
+          endDate: body.weekEndDate,
+          startDate: body.weekStartDate,
+          summaries: summariesString,
+        }),
+        role: 'user',
+      },
+    ],
+  })
+
+  if (!response.choices[0]?.message?.content) {
+    return new Response('No content found in response', { status: 500 })
+  }
+  
+  const aiContent = response.choices[0].message.content
+  if (!validateMarkdownContent(aiContent)) {
+    console.error('Invalid markdown content received from AI')
+    return new Response('Invalid content in AI response', { status: 500 })
+  }
+  
+  const responseContent = `# Weekly Summary for ${body.weekStartDate} - ${body.weekEndDate}\n${aiContent.trim()}`
+  const filename = `${process.env.WEEKLY_SUMMARY_NAME} ${dayjs().format('YYYY-MM-DD')}${process.env.NODE_ENV === 'development' ? `-DEV` : ''}.md`
+
+  await createOrUpdateFile({
+    content: responseContent,
+    filename,
+    inbox: true,
+    path: process.env.WEEKLY_SUMMARY_FOLDER,
+  })
+  console.log('Weekly summary written to GitHub: ', filename)
+  return new Response('ok', { status: 200 })
 }

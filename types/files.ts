@@ -1,9 +1,9 @@
-export type RecentFile = {
+export interface RecentDiff {
+  diff: string
   filename: string
-  body: string
 }
 
-export type RecentDiff = {
+export interface RecentFile {
+  body: string
   filename: string
-  diff: string
 }

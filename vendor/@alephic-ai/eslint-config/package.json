@@ -1,0 +1,37 @@
+{
+  "name": "@alephic-ai/eslint-config",
+  "version": "0.4.4",
+  "description": "A set of ESLint rules for Alephic AI projects",
+  "keywords": [],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/alephic-ai/tools.git",
+    "directory": "pkgs/eslint-config"
+  },
+  "license": "ISC",
+  "author": "",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./types/index.d.ts",
+  "dependencies": {
+    "@eslint/compat": "1.2.7",
+    "@next/eslint-plugin-next": "15.2.3",
+    "@typescript-eslint/eslint-plugin": "8.27.0",
+    "@typescript-eslint/parser": "8.27.0",
+    "eslint": "9.23.0",
+    "eslint-plugin-check-file": "3.1.0",
+    "eslint-plugin-import": "2.31.0",
+    "eslint-plugin-jsx-a11y": "6.10.2",
+    "eslint-plugin-perfectionist": "4.10.1",
+    "eslint-plugin-react": "7.37.4",
+    "eslint-plugin-react-hooks": "5.2.0",
+    "globals": "16.0.0",
+    "typescript-eslint": "8.27.0"
+  },
+  "devDependencies": {
+    "@types/eslint": "9.6.1"
+  },
+  "scripts": {
+    "build": "tsc --build"
+  }
+}

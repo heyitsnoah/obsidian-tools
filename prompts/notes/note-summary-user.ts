@@ -1,3 +1,32 @@
+export function getDiffSummarizationPrompt(diffContent: string) {
+  return `
+Analyze the following diff content and create a concise summary of the key changes:
+
+<diff_content>
+${diffContent}
+</diff_content>
+
+Your summary should:
+1. Start with a brief one-sentence overview of the main changes.
+2. List the key updates, focusing on what was added, removed, or modified.
+3. Ignore minor changes like whitespace or formatting unless they are significant.
+4. Mention file names affected by the changes, if available.
+5. Provide a brief explanation of the purpose or impact of significant changes, if apparent.
+
+Use the following format for your summary:
+<summary>
+[One-sentence overview]
+
+Key changes:
+- [Change description]
+- [Change description]
+...
+
+</summary>
+
+Important: Focus on providing a clear, concise list of the main updates. Do not include extensive formatting or unnecessary details. Your goal is to give a quick understanding of what has changed.
+`
+}
 export function getNoteSummarizationPrompt(filename: string, content: string) {
   return `
 You are tasked with creating a concise yet comprehensive summary of a note. The summary should consist of a brief paragraph overview followed by a detailed list of bullet points.
@@ -50,34 +79,5 @@ Provide your summary in the following format:
 </summary>
 
 Important: Provide only the summary paragraph and detailed bullet-point list using the specified Markdown-compatible formatting. Do not include any additional text, explanations, or formatting outside of the summary tags.
-`
-}
-export function getDiffSummarizationPrompt(diffContent: string) {
-  return `
-Analyze the following diff content and create a concise summary of the key changes:
-
-<diff_content>
-${diffContent}
-</diff_content>
-
-Your summary should:
-1. Start with a brief one-sentence overview of the main changes.
-2. List the key updates, focusing on what was added, removed, or modified.
-3. Ignore minor changes like whitespace or formatting unless they are significant.
-4. Mention file names affected by the changes, if available.
-5. Provide a brief explanation of the purpose or impact of significant changes, if apparent.
-
-Use the following format for your summary:
-<summary>
-[One-sentence overview]
-
-Key changes:
-- [Change description]
-- [Change description]
-...
-
-</summary>
-
-Important: Focus on providing a clear, concise list of the main updates. Do not include extensive formatting or unnecessary details. Your goal is to give a quick understanding of what has changed.
 `
 }

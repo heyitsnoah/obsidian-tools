@@ -8,16 +8,16 @@ export async function scrapeUrl(url: string) {
   let data
   if (process.env.PROXY_HOST) {
     const headers = {
-      'User-Agent':
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Safari/537.36',
       'Accept':
         'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
       'Accept-Language': 'en-US,en;q=0.5',
+      'User-Agent':
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Safari/537.36',
     }
 
     const proxyAgent = new SocksProxyAgent(
       `socks5://${process.env.PROXY_USERNAME!}:${process.env
-        .PROXY_PASSWORD!}@${process.env.PROXY_HOST!}:${process.env.PROXY_PORT!}`
+        .PROXY_PASSWORD!}@${process.env.PROXY_HOST}:${process.env.PROXY_PORT!}`
     )
     try {
       const axiosResponse = await axios.get(url, {
@@ -58,7 +58,7 @@ export async function scrapeUrl(url: string) {
     .map((tag) => {
       const property = $(tag).attr('property') || $(tag).attr('name')
       const content = $(tag).attr('content')
-      return { property, content }
+      return { content, property }
     })
-  return { title, body: text, metadata }
+  return { body: text, metadata, title }
 }

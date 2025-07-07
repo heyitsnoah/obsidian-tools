@@ -1,13 +1,13 @@
 {
-  "editor.formatOnSave": true,
-  "editor.codeActionsOnSave": ["source.fixAll.eslint"],
-  "editor.defaultFormatter": "esbenp.prettier-vscode",
-  "eslint.validate": ["javascript", "typescript"],
-  "typescript.updateImportsOnFileMove.enabled": "always",
-  "[prisma]": {
-    "editor.defaultFormatter": "Prisma.prisma"
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit",
+    "source.organizeImports": "never"
   },
-  "[xml]": {
-    "editor.defaultFormatter": "redhat.vscode-xml"
-  }
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.formatOnSave": true,
+  "search.exclude": {
+    "pnpm-lock.yaml": true
+  },
+  "typescript.preferences.autoImportFileExcludePatterns": ["@radix-ui/*"],
+  "typescript.updateImportsOnFileMove.enabled": "always"
 }

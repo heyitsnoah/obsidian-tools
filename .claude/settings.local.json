@@ -1,8 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(gh pr view:*)",
-      "Bash(gh pr diff:*)"
+      "Bash(ls:*)",
+      "Bash(find:*)",
+      "Bash(pnpm lint:*)"
     ],
     "deny": []
   }
