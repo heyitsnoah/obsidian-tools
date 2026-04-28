@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import { getOpenAI, O3_CONFIG } from './ai'
+import { generateAiObject } from './ai'
 import { getRedis } from './redis'
 import { scrapeUrl } from './scrape'
 
@@ -13,12 +13,8 @@ export async function processUrl(url: string, urlBodiesKey: string) {
   try {
     const body = await scrapeUrl(url) // Replace with your scraping function
     if (body?.body) {
-      const response = await getOpenAI().chat.completions.create({
-        ...O3_CONFIG,
-        messages: [
-          {
-            role: 'user',
-            content: `You are tasked with summarizing the content of a website based on its title and body. Your goal is to create a concise yet informative summary that captures the main points of the content.
+      const urlSummary = await generateAiObject({
+        prompt: `You are tasked with summarizing the content of a website based on its title and body. Your goal is to create a concise yet informative summary that captures the main points of the content.
 
 Here is the content to summarize:
 
@@ -42,17 +38,12 @@ Provide your response as a JSON object with the following structure:
 }
 
 Do not include any explanation or additional text outside of this JSON object.`,
-          },
-        ],
-        response_format: { type: 'json_object' },
+        schema: urlResponse,
       })
-      if (!response.choices[0]?.message?.content) {
+      if (!urlSummary) {
         console.error(`Failed to summarize URL: ${url}`)
         throw new Error('Failed to summarize URL')
       }
-      const urlSummary = urlResponse.parse(
-        JSON.parse(response.choices[0].message.content),
-      )
       if (!urlSummary.skipUrl) {
         const redis = getRedis()
         await redis.hset(urlBodiesKey, {

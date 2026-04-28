@@ -12,10 +12,9 @@
     "tsc": "tsc --noEmit"
   },
   "dependencies": {
-    "@anatine/zod-openapi": "^2.2.6",
-    "@anthropic-ai/sdk": "^0.91.1",
     "@upstash/qstash": "^2.10.1",
     "@upstash/redis": "^1.37.0",
+    "ai": "^6.0.168",
     "axios": "^1.15.2",
     "cheerio": "^1.2.0",
     "dayjs": "^1.11.20",
@@ -24,14 +23,13 @@
     "jsonwebtoken": "^9.0.3",
     "next": "16.2.4",
     "octokit": "^5.0.5",
-    "openai": "^6.34.0",
     "pako": "^2.1.0",
     "react": "19.2.5",
     "react-dom": "19.2.5",
     "socks-proxy-agent": "^10.0.0",
     "string-byte-length": "^3.0.0",
     "turndown": "^7.2.4",
-    "zod": "^3.23.8"
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@types/jsonwebtoken": "^9.0.10",

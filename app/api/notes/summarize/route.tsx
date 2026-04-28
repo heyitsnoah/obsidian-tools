@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server'
 
 import { getNoteSummarizationPrompt } from '@/prompts/notes/note-summary-user'
 import { RouteMessageMap } from '@/types/upstash'
-import { getOpenAI, O3_CONFIG } from '@/utils/ai'
+import { generateAiText } from '@/utils/ai'
 import { getRedis } from '@/utils/redis'
 import { verifyUpstashSignature } from '@/utils/upstash'
 export const maxDuration = 300
@@ -11,31 +11,13 @@ export async function POST(req: NextRequest) {
   console.log('POST /api/notes/summarize')
   const body: RouteMessageMap['/api/notes/summarize'] =
     await verifyUpstashSignature(req)
-  const response = await getOpenAI().chat.completions.create({
-    ...O3_CONFIG,
-    messages: [
-      {
-        role: 'user',
-        content: getNoteSummarizationPrompt(body.note.filename, body.note.body),
-      },
-    ],
+  const responseContent = await generateAiText({
+    prompt: getNoteSummarizationPrompt(body.note.filename, body.note.body),
   })
-  //   const response = await anthropic.messages.create({
-  //     max_tokens: 1000,
-  //     model: 'claude-3-5-sonnet-20240620',
 
-  //     messages: [
-  //       {
-  //         role: 'user',
-  //         content: getNoteSummarizationPrompt(body.note.filename, body.note.body),
-  //       },
-  //     ],
-  //   })
-  if (!response.choices[0]?.message?.content) {
+  if (!responseContent) {
     return new Response('No content found in response', { status: 500 })
   }
-  //   const responseContent = (response.content[0] as TextBlock).text
-  const responseContent = response.choices[0].message.content
   const redis = getRedis()
   await redis.hset(body.keys.notesKey, {
     [body.note.filename]: responseContent.trim(),
