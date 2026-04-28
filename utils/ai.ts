@@ -1,36 +1,71 @@
-import { generateSchema } from '@anatine/zod-openapi'
-import Anthropic from '@anthropic-ai/sdk'
-import OpenAI from 'openai'
-import { z, ZodType } from 'zod'
+import { generateText, Output } from 'ai'
+import { z } from 'zod'
 
-let anthropic: Anthropic | null = null
-let openai: OpenAI | null = null
+export const GPT_5_5_MODEL = 'openai/gpt-5.5'
 
-export function getAnthropic() {
-  if (!anthropic) {
-    anthropic = new Anthropic({
-      apiKey: process.env.ANTHROPIC_API_KEY,
-    })
-  }
-
-  return anthropic
+function getGpt55ProviderOptions() {
+  return {
+    openai: {
+      reasoningEffort: 'high',
+    },
+    ...(process.env.OPENAI_API_KEY
+      ? {
+          gateway: {
+            byok: {
+              openai: [{ apiKey: process.env.OPENAI_API_KEY }],
+            },
+          },
+        }
+      : {}),
+  } as const
 }
 
-export function getOpenAI() {
-  if (!openai) {
-    openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-      organization: process.env.OPENAI_ORGANIZATION_ID,
-    })
-  }
-
-  return openai
+type GenerateAiTextOptions = {
+  prompt: string
+  system?: string
 }
 
-export const O3_CONFIG = {
-  model: 'o3',
-  reasoning_effort: 'high',
-} as const
+type GenerateAiObjectOptions<T extends z.ZodType> = GenerateAiTextOptions & {
+  schema: T
+}
+
+export function hasAiCredentials(): boolean {
+  return Boolean(
+    process.env.AI_GATEWAY_API_KEY ||
+      process.env.VERCEL_OIDC_TOKEN ||
+      process.env.VERCEL,
+  )
+}
+
+export async function generateAiText({
+  prompt,
+  system,
+}: GenerateAiTextOptions): Promise<string> {
+  const { text } = await generateText({
+    model: GPT_5_5_MODEL,
+    providerOptions: getGpt55ProviderOptions(),
+    prompt,
+    system,
+  })
+
+  return text
+}
+
+export async function generateAiObject<T extends z.ZodType>({
+  prompt,
+  schema,
+  system,
+}: GenerateAiObjectOptions<T>): Promise<z.infer<T>> {
+  const { output } = await generateText({
+    model: GPT_5_5_MODEL,
+    output: Output.object({ schema }),
+    providerOptions: getGpt55ProviderOptions(),
+    prompt,
+    system,
+  })
+
+  return schema.parse(output)
+}
 
 /**
  * Validates that a string contains valid markdown content
@@ -65,28 +100,14 @@ export function validateMarkdownContent(content: string): boolean {
   return true
 }
 
-export async function extractJson<T extends ZodType>(
+export async function extractJson<T extends z.ZodType>(
   string: string,
   zodType: T,
 ): Promise<z.infer<T>> {
-  const response = await getOpenAI().chat.completions.create({
-    ...O3_CONFIG,
-    messages: [
-      {
-        role: 'system',
-        content: `Please extract the JSON object from the user's text. Use the following OpenAPI schema: ${generateSchema(zodType)}`,
-      },
-      {
-        role: 'user',
-        content: string,
-      },
-    ],
+  return generateAiObject({
+    prompt: string,
+    schema: zodType,
+    system:
+      "Please extract the JSON object from the user's text. Return only data that matches the requested schema.",
   })
-
-  if (!response || !response.choices[0].message.content) {
-    throw new Error('No content found in response')
-  }
-
-  const parsedContent = JSON.parse(response.choices[0].message.content)
-  return zodType.parse(parsedContent)
 }

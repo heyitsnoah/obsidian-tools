@@ -9,7 +9,12 @@ import {
 } from '@/prompts/summarize/daily-summary-user'
 import { RouteMessageMap } from '@/types/upstash'
 import { UrlBodies } from '@/types/urls'
-import { getOpenAI, O3_CONFIG, validateMarkdownContent } from '@/utils/ai'
+import {
+  generateAiObject,
+  generateAiText,
+  hasAiCredentials,
+  validateMarkdownContent,
+} from '@/utils/ai'
 import { formatCalendarEvents, getDaysEvents } from '@/utils/calendar'
 import { createOrUpdateFile, getRecentFiles } from '@/utils/github'
 import { getRedis } from '@/utils/redis'
@@ -59,25 +64,18 @@ export async function POST(req: NextRequest) {
     urlsArray ? `\n${formatInputs(urlsArray)}` : ''
   }`.trim()
 
-  const response = await getOpenAI().chat.completions.create({
-    ...O3_CONFIG,
-    messages: [
-      { role: 'system', content: DAILY_SUMMARY_SYSTEM_PROMPT },
-      {
-        role: 'user',
-        content: getDailySummaryUserPrompt({
-          date: dayjs(body.date).format('MMMM D, YYYY'),
-          notes: notesString,
-        }),
-      },
-    ],
+  const responseString = await generateAiText({
+    prompt: getDailySummaryUserPrompt({
+      date: dayjs(body.date).format('MMMM D, YYYY'),
+      notes: notesString,
+    }),
+    system: DAILY_SUMMARY_SYSTEM_PROMPT,
   })
 
-  if (!response.choices[0]?.message?.content) {
+  if (!responseString) {
     return new Response('No content found in response', { status: 500 })
   }
-  const responseString = response.choices[0].message.content
-  
+
   if (!validateMarkdownContent(responseString)) {
     console.error('Invalid markdown content received from AI')
     return new Response('Invalid content in AI response', { status: 500 })
@@ -140,7 +138,7 @@ export async function GET(req: NextRequest) {
   ) {
     return new Response('Unauthorized', { status: 401 })
   }
-  if (!process.env.YOUR_NAME || !process.env.OPENAI_API_KEY) {
+  if (!process.env.YOUR_NAME || !hasAiCredentials()) {
     // Treating this as if user does not want daily summaries.
     return new Response('Missing environment variables', { status: 200 })
   }
@@ -164,29 +162,14 @@ export async function GET(req: NextRequest) {
       urls.push(url)
     })
   })
-  const openaiResponse = await getOpenAI().chat.completions.create({
-    model: 'gpt-4o-2024-08-06',
-    messages: [
-      {
-        role: 'system',
-        content:
-          'You will be given an array of URLs. Your job is to return the urls that represent valuable content, not the ones that are generic (like google.com, yahoo.com, nytimes.com, cnn.com, etc.), redirects, generic, shortened, and otherwise not useful. Return urls in this JSON format: {usefulUrls: string[]}',
-      },
-      {
-        role: 'user',
-        content: `URLs: ${JSON.stringify(urls)}}\nUseful URLs:`,
-      },
-    ],
-    response_format: { type: 'json_object' },
-  })
-  if (!openaiResponse.choices[0].message.content) {
-    return new Response('No content found in response', { status: 500 })
-  }
   let parsed
   try {
-    parsed = UsefulUrls.parse(
-      JSON.parse(openaiResponse.choices[0].message.content),
-    )
+    parsed = await generateAiObject({
+      prompt: `URLs: ${JSON.stringify(urls)}\nUseful URLs:`,
+      schema: UsefulUrls,
+      system:
+        'You will be given an array of URLs. Your job is to return the urls that represent valuable content, not the ones that are generic (like google.com, yahoo.com, nytimes.com, cnn.com, etc.), redirects, generic, shortened, and otherwise not useful.',
+    })
   } catch (error) {
     console.error('Error parsing response:', error)
     return new Response('Error parsing response', { status: 500 })

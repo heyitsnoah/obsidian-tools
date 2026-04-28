@@ -9,7 +9,11 @@ import {
 } from '@/prompts/summarize/weekly-summary-user'
 import { RecentFile } from '@/types/files'
 import { RouteMessageMap } from '@/types/upstash'
-import { getOpenAI, O3_CONFIG, validateMarkdownContent } from '@/utils/ai'
+import {
+  generateAiText,
+  hasAiCredentials,
+  validateMarkdownContent,
+} from '@/utils/ai'
 import { createOrUpdateFile, getDailySummaries } from '@/utils/github'
 import { publishToUpstash, verifyUpstashSignature } from '@/utils/upstash'
 export const dynamic = 'force-dynamic'
@@ -49,31 +53,24 @@ export async function POST(req: NextRequest) {
 
   const summariesString = formatDailySummaries(dailySummaries)
 
-  const response = await getOpenAI().chat.completions.create({
-    ...O3_CONFIG,
-    messages: [
-      { role: 'system', content: WEEKLY_SUMMARY_SYSTEM_PROMPT },
-      {
-        role: 'user',
-        content: getWeeklySummaryUserPrompt({
-          startDate: body.weekStartDate,
-          endDate: body.weekEndDate,
-          summaries: summariesString,
-        }),
-      },
-    ],
+  const aiContent = await generateAiText({
+    prompt: getWeeklySummaryUserPrompt({
+      startDate: body.weekStartDate,
+      endDate: body.weekEndDate,
+      summaries: summariesString,
+    }),
+    system: WEEKLY_SUMMARY_SYSTEM_PROMPT,
   })
 
-  if (!response.choices[0]?.message?.content) {
+  if (!aiContent) {
     return new Response('No content found in response', { status: 500 })
   }
-  
-  const aiContent = response.choices[0].message.content
+
   if (!validateMarkdownContent(aiContent)) {
     console.error('Invalid markdown content received from AI')
     return new Response('Invalid content in AI response', { status: 500 })
   }
-  
+
   const responseContent = `# Weekly Summary for ${body.weekStartDate} - ${body.weekEndDate}\n${aiContent.trim()}`
   const filename = `${process.env.WEEKLY_SUMMARY_NAME} ${dayjs().format('YYYY-MM-DD')}${process.env.NODE_ENV === 'development' ? `-DEV` : ''}.md`
 
@@ -94,7 +91,7 @@ export async function GET(req: NextRequest) {
   ) {
     return new Response('Unauthorized', { status: 401 })
   }
-  if (!process.env.YOUR_NAME || !process.env.OPENAI_API_KEY) {
+  if (!process.env.YOUR_NAME || !hasAiCredentials()) {
     // Treating this as if user does not want weekly summaries.
     return new Response('Missing environment variables', { status: 200 })
   }
